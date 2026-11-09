@@ -3,6 +3,8 @@ import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,gearPrice,upgrade
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,MAX_LEVEL,playerLevel,xpForLevel,availableSP} from './progression.js';
 import {panelContent,boatArt} from './panels.js';
 import {sprite,fishStyle,waterStyle} from './art.js';
+import {createReelInput} from './touch-reel.js';
+const reelInput=createReelInput();
 import {createCombatFX} from './effects.js';
 const $=id=>document.getElementById(id), fmt=n=>Math.round(n).toLocaleString('ko-KR'), esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=STARTER(),storageWarning=false,loadError=false;
@@ -27,12 +29,12 @@ function render(){
  $('sellDot').hidden=!state.bag.length;$('baitText').textContent=BAITS.find(b=>b.id===state.bait).name;
  $('bossBtn').firstElementChild.textContent=r.bossId==null?'✦ 지역 의뢰':state.bosses.includes(r.bossId)?'✦ 보스 완료':'✦ 보스 도전';$('bossHint').textContent=r.bossId==null?`${state.counts[state.region]} / ${r.minimum_catches}마리`:FISH[r.bossId].name;
  $('questChip').textContent=state.ended?'전설의 여행 완료 · 이제 자유롭게 낚시해요':`Lv.${lvl} · 장비 ${state.tackle+1}등급 +${state.tackleUpgrade} · ${state.counts[state.region]}/${r.minimum_catches}마리`;
- $('pauseOverlay').hidden=!paused;renderActiveSkills();
+ $('pauseOverlay').hidden=!paused;syncReel();renderActiveSkills();
 }
 function setAction(title,sub=''){const b=$('actionBtn');b.firstElementChild.textContent=title;b.lastElementChild.textContent=sub;}
 function hint(text,danger=false){$('instruction').textContent=text;$('instruction').classList.toggle('danger',danger);}
 function resetIdle(message='다음 물결에는 어떤 친구가 기다릴까요?'){
- fx.clear();hitClock=0;phase='idle';fight=null;currentFish=null;bossTrip=false;releaseInput();$('castGauge').hidden=true;$('fightLabel').hidden=true;$('wildFish').classList.remove('visible');$('bobber').hidden=false;$('sceneMessage').textContent=message;$('sceneMessage').hidden=false;$('fishValue').textContent='—';$('fishBar').style.width='0%';$('heroValue').textContent=Math.ceil(state.hp);$('heroBar').style.width=`${state.hp/maxHP(state)*100}%`;$('tensionValue').textContent='0%';$('tensionBar').style.width='0%';$('skillFill').style.height='0%';$('skillBtn').disabled=false;$('leftBtn').disabled=true;$('rightBtn').disabled=true;setAction('낚시 시작','방향 · 힘 · 챔질');hint('낚시 시작을 누르세요');render();
+ fx.clear();hitClock=0;phase='idle';fight=null;currentFish=null;bossTrip=false;releaseInput();$('castGauge').hidden=true;$('fightLabel').hidden=true;$('wildFish').classList.remove('visible');$('bobber').hidden=false;$('sceneMessage').textContent=message;$('sceneMessage').hidden=false;$('fishValue').textContent='—';$('fishBar').style.width='0%';$('heroValue').textContent=Math.ceil(state.hp);$('heroBar').style.width=`${state.hp/maxHP(state)*100}%`;$('tensionValue').textContent='0%';$('tensionBar').style.width='0%';$('skillFill').style.height='0%';$('skillBtn').disabled=false;$('leftBtn').disabled=true;$('rightBtn').disabled=true;setAction('낚시 시작','방향 · 힘 · 챔질');hint('수면을 터치해 낚시를 시작하세요');render();
 }
 function start(boss=false){
  if(phase!=='idle')return;if(state.hp<(boss?6:3)){openPanel('home');toast('집에서 잠을 자고 체력을 회복해 주세요.');return;}if(state.region>BOATS[state.boat].region){openPanel('map');toast('현재 배로 갈 수 있는 낚시터를 선택해 주세요.');return;}if(!boss&&state.baitStock[state.bait]<=0){openPanel('shop');toast('미끼가 떨어졌어요. 상점에서 준비해 주세요.');return;}view='fish';render();if(state.bag.length>=capacity(state)){toast('보관함이 가득 찼어요. 먼저 물고기를 판매해 주세요.');openPanel('market');return;}
@@ -51,26 +53,47 @@ function action(){
  }
  if(phase==='waiting'){toast('아직이에요! 찌가 내려갈 때를 기다려요.');return;}
  if(phase==='bite'){phase='fight';fight=makeFight(state,currentFish,currentGrade,castQuality);$('fishSprite').style.cssText=fishStyle(currentFish.id);$('wildFish').classList.add('visible');$('wildFish').classList.toggle('boss-fish',bossTrip);$('fightLabel').hidden=false;$('fishName').textContent=(currentFish.legendary?'LEGEND · ':bossTrip?'BOSS · ':'')+currentFish.name;if(currentFish.legendary){fx.impact('critical','천해룡 아스트라 · 깨어남',true);toast('환상의 물고기가 모습을 드러냈어요. 세 번의 물결을 이겨내세요!',5000);};$('bobber').hidden=true;$('sceneMessage').hidden=true;$('leftBtn').disabled=false;$('rightBtn').disabled=false;setAction('손 떼고 쉬기','긴장을 낮춰요');sound('bite');buzz(35);return;}
- if(phase==='fight'){if(critical(fight)){fx.impact('critical','정확한 챔질!',true);toast('정확한 타이밍! 힘껏 챔질 ✦');sound('critical');buzz(25);}else{releaseInput();toast('좌우 버튼에서 손을 떼면 줄이 쉬어요.');}}
+ if(phase==='fight'){if(critical(fight)){fx.impact('critical','정확한 챔질!',true);toast('정확한 타이밍! 힘껏 챔질 ✦');sound('critical');buzz(25);}else{releaseInput();toast('가운데 릴을 누르고 있으면 줄이 풀려요.');}}
 }
 $('actionBtn').onclick=action;
-function releaseInput(){input=0;['leftBtn','rightBtn'].forEach(id=>$(id).classList.remove('active'));}
-for(const [id,dir]of [['leftBtn',-1],['rightBtn',1]]){const b=$(id);b.addEventListener('pointerdown',e=>{e.preventDefault();if(phase!=='fight'||paused||modal.open)return;releaseInput();input=dir;if(fight&&dir===-fight.direction){fx.impact('hit','탁!');sound('hit');}b.classList.add('active');b.setPointerCapture(e.pointerId);});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,releaseInput);b.addEventListener('contextmenu',e=>e.preventDefault());}
+function releaseInput(){reelInput.clear();input=0;syncReel();}
+function syncReel(){
+ const battle=view==='fish'&&phase==='fight';$('game').classList.toggle('battle-mode',battle);
+ const pulling=battle&&!paused&&!modal.open&&reelInput.input!==0,unwinding=battle&&!paused&&!modal.open&&reelInput.releasing;
+ $('game').classList.toggle('winding',pulling);$('game').classList.toggle('releasing',unwinding);
+ $('reelBtn').setAttribute('aria-pressed',String(unwinding));
+ const title=unwinding?'줄 푸는 중':pulling?'줄 감는 중':'줄 대기';
+ $('reelStatus').firstChild.textContent=title;
+ $('reelStatus').lastElementChild.textContent=battle&&fight&&fight.elapsed%7>=4.8&&fight.elapsed%7<=6.4?'반대쪽 톡! 강한 챔질':'수면 터치 → 감기';
+}
+const water=$('scene'),reel=$('reelBtn');
+water.addEventListener('pointerdown',e=>{
+ if(e.target.closest('button')||modal.open||paused||view!=='fish')return;e.preventDefault();
+ if(phase!=='fight'){action();return;}
+ const r=water.getBoundingClientRect();reelInput.waterDown(e.pointerId,e.clientX,r.left,r.width);input=reelInput.input;water.setPointerCapture(e.pointerId);
+ if(input===-fight.direction){if(critical(fight)){fx.impact('critical','강한 챔질!',true);sound('critical');}else{fx.impact('hit','탁!');sound('hit');}}syncReel();
+});
+water.addEventListener('pointermove',e=>{if(phase!=='fight')return;const r=water.getBoundingClientRect();reelInput.waterMove(e.pointerId,e.clientX,r.left,r.width);input=reelInput.input;});
+reel.addEventListener('pointerdown',e=>{if(phase!=='fight'||modal.open||paused)return;e.preventDefault();reelInput.reelDown(e.pointerId);input=0;reel.setPointerCapture(e.pointerId);buzz(12);syncReel();});
+for(const surface of [water,reel]){
+ for(const event of ['pointerup','pointercancel','lostpointercapture'])surface.addEventListener(event,e=>{reelInput.up(e.pointerId);input=reelInput.input;syncReel();});
+ surface.addEventListener('contextmenu',e=>e.preventDefault());
+}
 $('skillBtn').onclick=()=>openPanel('skills');
 $('homeBtn').onclick=goTown;document.querySelectorAll('[data-town]').forEach(b=>b.onclick=()=>openPanel(b.dataset.town));
 [0,1,2].forEach(i=>$('active'+i).onclick=()=>useActive(i));
-document.addEventListener('keydown',e=>{if(modal.open||e.repeat)return;if(e.code==='Space'){e.preventDefault();action();}if(phase==='fight'&&!paused){if(e.key==='ArrowLeft'){e.preventDefault();input=-1;$('leftBtn').classList.add('active');}if(e.key==='ArrowRight'){e.preventDefault();input=1;$('rightBtn').classList.add('active');}if(['1','2','3'].includes(e.key))useActive(Number(e.key)-1);if(e.key.toLowerCase()==='s')useActive(0);}});document.addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key))releaseInput();});
-function fail(message){if(fight)state.hp=Math.max(0,fight.hero);state.fame=Math.max(0,state.fame-1);state.stats.failures++;save();sound('fail');resetIdle(message);show('아쉽게 놓쳤어요',`<p>${message}</p><div class="notice">줄이 빨개지기 전에 손을 떼고 쉬세요. 물고기가 가는 방향의 <b>반대쪽</b> 버튼을 길게 누르면 체력을 줄일 수 있어요.</div><p class="muted">미끼는 사용되었지만 장비와 이미 잡은 물고기는 그대로예요.</p><button class="primary" data-do="retry">다시 낚시하기</button>`,'result');}
+document.addEventListener('keydown',e=>{if(modal.open||e.repeat)return;if(e.target.id==='reelBtn'&&e.code==='Space'){e.preventDefault();reelInput.reelDown('keyboardReel');return;}if(e.code==='Space'){e.preventDefault();action();}if(phase==='fight'&&!paused){if(e.key==='ArrowLeft'){e.preventDefault();reelInput.key(-1);input=reelInput.input;}if(e.key==='ArrowRight'){e.preventDefault();reelInput.key(1);input=reelInput.input;}if(['1','2','3'].includes(e.key))useActive(Number(e.key)-1);if(e.key.toLowerCase()==='s')useActive(0);}});document.addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){reelInput.key(0);input=reelInput.input;}if(e.code==='Space')reelInput.up('keyboardReel');});
+function fail(message){if(fight)state.hp=Math.max(0,fight.hero);state.fame=Math.max(0,state.fame-1);state.stats.failures++;save();sound('fail');resetIdle(message);show('아쉽게 놓쳤어요',`<p>${message}</p><div class="notice">물고기가 가는 방향의 <b>반대쪽 수면</b>을 터치해서 줄을 감으세요. 줄이 빨개지면 <b>가운데 릴을 누르고</b> 줄을 풀어 주세요.</div><p class="muted">미끼는 사용되었지만 장비와 이미 잡은 물고기는 그대로예요.</p><button class="primary" data-do="retry">다시 낚시하기</button>`,'result');}
 function caught(){state.hp=Math.max(0,fight.hero);const oldLevel=playerLevel(state);const item=addCatch(state,fight.fish,fight.grade,.92+Math.random()*.16);if(!item){resetIdle();toast('보관함을 확인해 주세요.');return;}pendingCatch=item;save();if(playerLevel(state)>oldLevel)toast(`레벨 업! Lv.${playerLevel(state)} · 스킬 포인트를 확인하세요.`,4000);sound('catch');buzz([30,50,30]);resetIdle('멋진 한 마리! 여행 수첩에 기록했어요.');const f=FISH[item.id];show('월척! 잘 잡았어요',`<div class="catch-heading"><small>${f.boss?'전설의 보스 포획':f.ornamental?'반짝이는 관상어':'오늘의 작은 발견'}</small><div class="catch-art">${sprite(f.id)}</div><h3>${f.name}</h3><p>${['대형','중형','소형'][item.grade]} · ${item.size}cm · ${REGIONS[item.region].name}</p></div><div class="stat-pills"><span>판매가 <b>${fmt(item.value)} G</b></span><span>도감 <b>${Object.keys(state.collection).length}/${FISH.length}</b></span><span><b>+${item.xp} EXP</b></span></div><button class="primary" data-do="sell-catch">바로 판매 · ${fmt(Math.max(0,item.value-(item.boss?0:REGIONS[item.region].expense_on_sale)))} G</button><button class="secondary" data-do="retry">보관하고 계속 낚시</button>${f.legendary?'<button class="primary" data-do="finish">전설의 여행 엔딩 보기</button>':''}${f.boss?'<p class="notice">보스 단서를 여행 수첩에 기록했어요. 마지막 전설어를 잡았다면 엔딩과 집 기념관을 확인하세요.</p>':''}`,'result');}
 function tick(now){const dt=Math.min(.08,(now-last)/1000);last=now;
  if(!paused&&!modal.open&&!document.hidden){
   state.seconds+=dt;saveClock+=dt;hudClock+=dt;
   if(phase==='direction'||phase==='power'){timer+=dt;cast=(Math.sin(timer*(phase==='direction'?2.3:3.1))+1)/2;$('castNeedle').style.left=`${cast*98}%`;}
-  if(phase==='waiting'){timer-=dt;if(timer<=0){phase='bite';timer=(state.caught<3?5:2.4)+(state.skills.focus||0)*.2;setAction('지금 챔질!','지금 눌러요!');hint('입질이에요! 가운데 버튼을 누르세요',true);$('sceneMessage').textContent='왔다! 지금 챔질해요!';sound('bite');buzz([30,30,30]);}}
+  if(phase==='waiting'){timer-=dt;if(timer<=0){phase='bite';timer=(state.caught<3?5:2.4)+(state.skills.focus||0)*.2;setAction('지금 챔질!','지금 눌러요!');hint('입질! 수면을 터치해 챔질하세요',true);$('sceneMessage').textContent='왔다! 지금 챔질해요!';sound('bite');buzz([30,30,30]);}}
   else if(phase==='bite'){timer-=dt;$('bobber').style.transform=`translateY(${Math.sin(now/70)*9}px)`;if(timer<=0)fail('챔질 타이밍이 늦었어요. 다음 입질을 노려요!');}
-  if(phase==='fight'&&fight){const oldPhase=fight.phase;fightStep(fight,dt,input);if(fight.legendary&&fight.phase!==oldPhase){fx.impact('critical',['','깨어남','별빛 폭풍','마지막 해류'][fight.phase],true);toast(`천해룡 ${fight.phase}/3단계 · ${fight.phase===2?'별빛 폭풍':'마지막 해류'}`,4000);}if(fight.legendary)$('fishName').textContent=`LEGEND ${fight.phase}/3 · 천해룡 아스트라`;fx.update(fight,now/1000);hitClock+=dt;if(input===-fight.direction&&hitClock>.38){hitClock=0;fx.impact('hit','탁!');sound('hit');}$('heroValue').textContent=Math.ceil(fight.hero);$('heroBar').style.width=`${fight.hero/fight.heroMax*100}%`;$('fishValue').textContent=Math.ceil(fight.hp);$('fishBar').style.width=`${fight.hp}%`;$('tensionBar').style.width=`${fight.tension}%`;$('tensionBar').style.background=fight.tension>78?'#d66b49':'#358b8c';$('tensionValue').textContent=`${Math.round(fight.tension)}%`;$('fishDirection').textContent=fight.direction===1?'→':'←';$('fishSprite').style.transform=fight.direction===1?'scaleX(-1)':'none';$('skillFill').style.height=`${fight.skill*100}%`;$('skillBtn').disabled=false;renderActiveSkills();
+  syncReel();if(phase==='fight'&&fight){input=reelInput.input;const oldPhase=fight.phase;fightStep(fight,dt,input);if(fight.legendary&&fight.phase!==oldPhase){fx.impact('critical',['','깨어남','별빛 폭풍','마지막 해류'][fight.phase],true);toast(`천해룡 ${fight.phase}/3단계 · ${fight.phase===2?'별빛 폭풍':'마지막 해류'}`,4000);}if(fight.legendary)$('fishName').textContent=`LEGEND ${fight.phase}/3 · 천해룡 아스트라`;fx.update(fight,now/1000);const lineX=parseFloat($('wildFish').style.left)*10,lineY=parseFloat($('wildFish').style.top)*10,lineSag=reelInput.releasing?170:Math.max(10,90-fight.tension);$('fishingLine').setAttribute('d',`M240 790 Q${(240+lineX)/2} ${(790+lineY)/2+lineSag} ${lineX} ${lineY}`);hitClock+=dt;if(input===-fight.direction&&hitClock>.38){hitClock=0;fx.impact('hit','탁!');sound('hit');}$('heroValue').textContent=Math.ceil(fight.hero);$('heroBar').style.width=`${fight.hero/fight.heroMax*100}%`;$('fishValue').textContent=Math.ceil(fight.hp);$('fishBar').style.width=`${fight.hp}%`;$('tensionBar').style.width=`${fight.tension}%`;$('tensionBar').style.background=fight.tension>78?'#d66b49':'#358b8c';$('tensionValue').textContent=`${Math.round(fight.tension)}%`;$('fishDirection').textContent=fight.direction===1?'→':'←';$('fishSprite').style.transform=fight.direction===1?'scaleX(-1)':'none';$('skillFill').style.height=`${fight.skill*100}%`;$('skillBtn').disabled=false;renderActiveSkills();
    const crit=fight.elapsed%7>=4.8&&fight.elapsed%7<=6.4;setAction(crit?'지금 강하게!':'손 떼고 쉬기',crit?'타이밍 챔질 ✦':'긴장을 낮춰요');
-   hint(fight.tension>78?'줄이 위험해요! 양손을 떼고 쉬세요':fight.burst>0?'보스 돌진! 잠깐 손을 떼세요':fight.direction===1?'물고기가 오른쪽 → 왼쪽 버튼을 길게!':'물고기가 왼쪽 ← 오른쪽 버튼을 길게!',fight.tension>78);
+   hint(fight.tension>78?'줄이 위험해요! 가운데 릴을 눌러 풀어 주세요':fight.burst>0?'보스 돌진! 릴을 눌러 줄을 풀어요':fight.direction===1?'물고기 → · 왼쪽 수면을 터치해 감기':'물고기 ← · 오른쪽 수면을 터치해 감기',fight.tension>78);
    if(fight.done==='caught')caught();else if(fight.done==='lost')fail(fight.hero<=0?'힘이 다했어요. 반대 방향을 보고 당겨 보세요.':'줄이 팽팽해져 끊어졌어요. 쉬어 가며 당겨요!');
   }
   if(hudClock>1){hudClock=0;render();}if(saveClock>10){saveClock=0;save();}

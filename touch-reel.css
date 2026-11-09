@@ -1,0 +1,26 @@
+#game:not(.town-view){grid-template-rows:54px 36px minmax(160px,1fr) 34px 62px 40px 25px 104px 58px}
+#game.battle-mode{grid-template-rows:54px 36px minmax(160px,1fr) 65px 42px 26px 112px}
+.battle-mode>.journey-row,.battle-mode>.bottom-nav{display:none}
+.battle-mode #questChip{display:none}.battle-mode .hero{max-width:27%;max-height:160px;opacity:.95}
+.battle-mode .scene-top{padding:10px 12px}.battle-mode .location{background:#fff9e4e8;padding:6px 10px}.battle-mode .location small{display:none}.battle-mode .location b{font-size:17px}
+.battle-mode .fight-label{left:50%;top:18%;transform:translateX(-50%);white-space:nowrap;font-size:14px;padding:7px 14px;background:#16484de8}
+.battle-mode .wild-fish{width:160px;height:160px}.battle-mode .wild-fish.boss-fish{width:190px;height:190px}
+#scene{touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair}
+.fishing-line{display:none;position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}.battle-mode .fishing-line{display:block}.fishing-line path{fill:none;stroke:#fff2b9;stroke-width:2.5;filter:drop-shadow(0 1px 1px #1b444c)}
+#scene .hero,#scene .wild-fish,#scene .ripples,#scene .scene-message,#scene .fight-label,#scene .night-shade{pointer-events:none}
+.controls{display:flex;justify-content:center;align-items:center;position:relative;padding:5px 12px;background:linear-gradient(#fff8e7,#eee0c1);border-top:1px solid #d4c4a0;gap:16px}
+#leftBtn,#rightBtn{display:none!important}.controls #skillBtn{position:absolute;right:18px;bottom:17px;width:48px;height:48px;border-radius:50%;box-shadow:none}.controls #skillBtn span{font-size:20px}.controls #skillBtn small{display:none}
+.controls #actionBtn{width:210px;height:70px;border-radius:38px;font-size:18px;box-shadow:0 3px 0 #b78b43}.battle-mode #actionBtn{display:none}
+.controls #reelBtn{display:none;position:relative;overflow:visible;width:94px;height:94px;border-radius:50%;padding:0;background:radial-gradient(circle,#faf2d4 0 46%,#8f6633 47% 50%,#d6b66f 51% 59%,#faf0ca 60% 64%,#986c36 65% 68%,#c49a50 69%);box-shadow:0 4px 0 #76562e,0 6px 15px #63442535;border:1px solid #927145;touch-action:none;cursor:grab}
+.battle-mode #reelBtn{display:block}.reel-spool{position:absolute;inset:17px;border:5px double #aa8147;border-radius:50%;background:repeating-radial-gradient(circle,#e6d4a6 0 2px,#b18a53 3px 4px)}
+.reel-spool:before,.reel-spool:after{content:'';position:absolute;left:6px;right:6px;top:21px;height:5px;background:#785936;border-radius:5px}.reel-spool:after{transform:rotate(90deg)}
+.reel-handle{position:absolute;left:44px;top:44px;width:35px;height:8px;background:#795b36;transform-origin:3px 4px;transform:rotate(-40deg);border-radius:5px;border:1px solid #edcf8c}
+.reel-handle:after{content:'';position:absolute;right:-4px;top:-4px;width:12px;height:16px;border-radius:6px;background:#153f43;border:2px solid #c6aa70}
+.reel-label{position:absolute;left:0;right:0;bottom:12px;font-size:10px;color:#fff9e0;background:#4b492ccf;line-height:17px;border-radius:0 0 35px 35px;pointer-events:none}
+.reel-status{display:none;position:absolute;left:13px;top:22px;width:calc(50% - 65px);text-align:center;font-size:13px;color:#466b65;line-height:1.5}.reel-status small{display:block;font-size:10px;color:#778373}.battle-mode .reel-status{display:block}
+.winding .reel-spool,.winding .reel-handle{animation:reel-spin 1s linear infinite}.releasing .reel-spool,.releasing .reel-handle{animation:reel-spin 1.8s linear infinite reverse}.releasing #reelBtn{box-shadow:0 1px 0 #76562e,inset 0 0 15px #7bd7d180;transform:translateY(3px)}
+.battle-mode .instruction{background:#16484d;color:#f6ebc9;font-size:12px}.battle-mode .instruction.danger{background:#8e4432;color:#fff0d8}
+.battle-mode .instruments{background:#fff8e7;padding:8px 15px}.battle-mode .meter-row label{font-size:12px}.battle-mode .bar{height:9px}.battle-mode .active-skills{background:#f5ecd6;padding:4px 15px}
+@keyframes reel-spin{to{transform:rotate(360deg)}}
+@media(max-height:700px){#game:not(.town-view){grid-template-rows:46px 32px minmax(110px,1fr) 30px 53px 32px 22px 85px 50px}#game.battle-mode{grid-template-rows:46px 32px minmax(110px,1fr) 56px 34px 24px 94px}.controls #reelBtn{width:82px;height:82px}.reel-spool{inset:15px}.reel-spool:before,.reel-spool:after{top:17px}.reel-handle{left:38px;top:38px}.battle-mode .wild-fish{width:130px;height:130px}.battle-mode .wild-fish.boss-fish{width:155px;height:155px}.controls #actionBtn{height:58px}.battle-mode .fight-label{font-size:12px;top:21%}.battle-mode .fight-label b{font-size:18px}.reel-status{font-size:12px;left:7px}.controls #skillBtn{right:13px;bottom:15px}.battle-mode .instruction{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.reel-spool,.reel-handle{animation:none!important}}

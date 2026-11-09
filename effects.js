@@ -23,7 +23,7 @@ export function fishMotion(id,time,direction=1,boss=false){
 }
 export function createCombatFX({scene,layer,target,getState}){
  const reduced=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
- let last=0;
+ let last=0,visualX=60,lastMotionTime=null;
  function impact(kind='hit',text='탁!',forced=false){
   const now=performance.now();if(!forced&&now-last<220)return;last=now;
   const r=scene.getBoundingClientRect(),f=target.getBoundingClientRect(),x=f.left-r.left+f.width*.5,y=f.top-r.top+f.height*.5;
@@ -35,7 +35,7 @@ export function createCombatFX({scene,layer,target,getState}){
   if(!reduced()){const force=kind==='critical'||kind==='strike'?4:kind==='shock'?3:1.2;scene.animate([{transform:'translate(0,0)'},{transform:'translate('+(-force)+'px,'+(force/2)+'px)'},{transform:'translate('+force+'px,'+(-force/2)+'px)'},{transform:'translate(0,0)'}],{duration:kind==='hit'?110:220});target.animate([{filter:'brightness(1)'},{filter:'brightness('+(kind==='hit'?1.6:2.2)+')'},{filter:'brightness(1)'}],{duration:170});}
   if(getState().haptics&&navigator.vibrate)navigator.vibrate(kind==='hit'?8:kind==='critical'?[20,25,35]:18);
  }
- function update(f,time){const m=fishMotion(f.fish.id,time,f.direction,f.fish.boss);target.style.left=m.x+'%';target.style.top=m.y+'%';target.style.transform='translate(-50%,-50%) rotate('+m.angle+'deg) scale('+m.stretch+','+(2-m.stretch)+')';target.dataset.motion=m.family;scene.classList.toggle('elastic-aura',f.effects.elastic>0);scene.classList.toggle('electric-aura',f.effects.shock>0);scene.classList.toggle('grit-aura',f.effects.grit>0);}
- function clear(){layer.replaceChildren();scene.classList.remove('elastic-aura','electric-aura','grit-aura');target.style.transform='';}
+ function update(f,time){const m=fishMotion(f.fish.id,time,f.direction,f.fish.boss);const motionDt=lastMotionTime==null?.016:Math.min(.1,Math.max(0,time-lastMotionTime));lastMotionTime=time;const speed={dart:2,eel:1.2,glide:.7,crawl:.65,float:.55,predator:1.7,cruise:1}[m.family]||1;visualX+=((f.direction===1?78:40)-visualX)*Math.min(1,motionDt*speed);m.x=visualX;target.style.left=m.x+'%';target.style.top=m.y+'%';target.style.transform='translate(-50%,-50%) rotate('+m.angle+'deg) scale('+m.stretch+','+(2-m.stretch)+')';target.dataset.motion=m.family;scene.classList.toggle('elastic-aura',f.effects.elastic>0);scene.classList.toggle('electric-aura',f.effects.shock>0);scene.classList.toggle('grit-aura',f.effects.grit>0);}
+ function clear(){visualX=60;lastMotionTime=null;layer.replaceChildren();scene.classList.remove('elastic-aura','electric-aura','grit-aura');target.style.transform='';}
  return {impact,update,clear};
 }

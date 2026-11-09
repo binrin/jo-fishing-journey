@@ -1,3 +1,4 @@
+import {EXTRA_REGIONS,EXTRA_FISH} from './expansion-data.js';
 // Static resource data for 조선생의 낚시여행.
 // Sources: analysis/original-fish-data.json, native/fish-prices-hp.json,
 // native/items-static.json and balance-model.json. No runtime APK execution.
@@ -537,7 +538,7 @@ export const FISH = [
       1
     ],
     "bait": "절인고기",
-    "note": "낮에 출몰하는 피라랜드의 보스어종이다.",
+    "note": "낮에 출몰하는 연꽃 물굽이의 보스어종이다.",
     "boss": true,
     "ornamental": false,
     "time": "day",
@@ -1058,7 +1059,7 @@ export const FISH = [
       3
     ],
     "bait": "절인고기",
-    "note": "밤에 출물하는 잊혀진 골짜기의 보스어종이다.",
+    "note": "밤에 출물하는 안개잠긴 협곡의 보스어종이다.",
     "boss": true,
     "ornamental": false,
     "time": "night",
@@ -1625,7 +1626,7 @@ export const FISH = [
       5
     ],
     "bait": "절인고기",
-    "note": "밤에 출몰하는 황혼의 해안 보스어종이다.",
+    "note": "밤에 출몰하는 노을등대 해안 보스어종이다.",
     "boss": true,
     "ornamental": false,
     "time": "night",
@@ -1909,7 +1910,7 @@ export const FISH = [
       6
     ],
     "bait": "절인고기",
-    "note": "낮에 출몰하는 만타의 둥지 보스어종이다.",
+    "note": "낮에 출몰하는 푸른산호 만 보스어종이다.",
     "boss": true,
     "ornamental": false,
     "time": "day",
@@ -2193,7 +2194,7 @@ export const FISH = [
       7
     ],
     "bait": "절인고기",
-    "note": "밤에 출몰하는 비룡 골짜기의 보스어종이다.",
+    "note": "밤에 출몰하는 비취폭포 골의 보스어종이다.",
     "boss": true,
     "ornamental": false,
     "time": "night",
@@ -2477,7 +2478,7 @@ export const FISH = [
       8
     ],
     "bait": "절인고기",
-    "note": "낮에 출몰하는 메가피아의 보스어종이다.",
+    "note": "낮에 출몰하는 은빛파도 해의 보스어종이다.",
     "boss": true,
     "ornamental": false,
     "time": "day",
@@ -2803,7 +2804,7 @@ export const FISH = [
 
 export const REGIONS = [
   {
-    "region": "모리천",
+    "region": "솔바람 개울",
     "value": 200,
     "bait": 16.0,
     "expense_on_sale": 30.0,
@@ -2820,12 +2821,12 @@ export const REGIONS = [
     "quest_minutes": 8,
     "minimum_catches": 15,
     "id": 0,
-    "name": "모리천",
-    "display": "모리천",
+    "name": "솔바람 개울",
+    "display": "솔바람 개울",
     "bossId": null
   },
   {
-    "region": "피라랜드",
+    "region": "연꽃 물굽이",
     "value": 400,
     "bait": 32.0,
     "expense_on_sale": 60.0,
@@ -2842,12 +2843,12 @@ export const REGIONS = [
     "quest_minutes": 10,
     "minimum_catches": 20,
     "id": 1,
-    "name": "피라랜드",
-    "display": "피라랜드",
+    "name": "연꽃 물굽이",
+    "display": "연꽃 물굽이",
     "bossId": 11
   },
   {
-    "region": "바위무덤",
+    "region": "조개바위 포구",
     "value": 700,
     "bait": 56.0,
     "expense_on_sale": 105.0,
@@ -2864,12 +2865,12 @@ export const REGIONS = [
     "quest_minutes": 12,
     "minimum_catches": 25,
     "id": 2,
-    "name": "바위무덤",
-    "display": "바위무덤",
+    "name": "조개바위 포구",
+    "display": "조개바위 포구",
     "bossId": null
   },
   {
-    "region": "잊혀진 골짜기",
+    "region": "안개잠긴 협곡",
     "value": 1100,
     "bait": 88.0,
     "expense_on_sale": 165.0,
@@ -2886,12 +2887,12 @@ export const REGIONS = [
     "quest_minutes": 14,
     "minimum_catches": 30,
     "id": 3,
-    "name": "잊혀진 골짜기",
-    "display": "잊혀진 골짜기",
+    "name": "안개잠긴 협곡",
+    "display": "안개잠긴 협곡",
     "bossId": 22
   },
   {
-    "region": "사모아",
+    "region": "에메랄드 초호",
     "value": 1800,
     "bait": 144.0,
     "expense_on_sale": 270.0,
@@ -2908,12 +2909,12 @@ export const REGIONS = [
     "quest_minutes": 16,
     "minimum_catches": 35,
     "id": 4,
-    "name": "사모아",
-    "display": "사모아",
+    "name": "에메랄드 초호",
+    "display": "에메랄드 초호",
     "bossId": null
   },
   {
-    "region": "황혼의 해안",
+    "region": "노을등대 해안",
     "value": 2800,
     "bait": 224.0,
     "expense_on_sale": 420.0,
@@ -2930,12 +2931,12 @@ export const REGIONS = [
     "quest_minutes": 18,
     "minimum_catches": 40,
     "id": 5,
-    "name": "황혼의 해안",
-    "display": "황혼의 해안",
+    "name": "노을등대 해안",
+    "display": "노을등대 해안",
     "bossId": 34
   },
   {
-    "region": "만타의 둥지",
+    "region": "푸른산호 만",
     "value": 4200,
     "bait": 336.0,
     "expense_on_sale": 630.0,
@@ -2952,12 +2953,12 @@ export const REGIONS = [
     "quest_minutes": 20,
     "minimum_catches": 45,
     "id": 6,
-    "name": "만타의 둥지",
-    "display": "만타의 둥지",
+    "name": "푸른산호 만",
+    "display": "푸른산호 만",
     "bossId": 40
   },
   {
-    "region": "비룡 골짜기",
+    "region": "비취폭포 골",
     "value": 6500,
     "bait": 520.0,
     "expense_on_sale": 975.0,
@@ -2974,12 +2975,12 @@ export const REGIONS = [
     "quest_minutes": 22,
     "minimum_catches": 50,
     "id": 7,
-    "name": "비룡 골짜기",
-    "display": "비룡 골짜기",
+    "name": "비취폭포 골",
+    "display": "비취폭포 골",
     "bossId": 46
   },
   {
-    "region": "메가피아",
+    "region": "은빛파도 해",
     "value": 10000,
     "bait": 800.0,
     "expense_on_sale": 1500.0,
@@ -2996,12 +2997,12 @@ export const REGIONS = [
     "quest_minutes": 24,
     "minimum_catches": 55,
     "id": 8,
-    "name": "메가피아",
-    "display": "메가피아",
+    "name": "은빛파도 해",
+    "display": "은빛파도 해",
     "bossId": 52
   },
   {
-    "region": "어둠의 심연",
+    "region": "별잠든 심연",
     "value": 15000,
     "bait": 1200.0,
     "expense_on_sale": 2250.0,
@@ -3018,8 +3019,8 @@ export const REGIONS = [
     "quest_minutes": 26,
     "minimum_catches": 60,
     "id": 9,
-    "name": "어둠의 심연",
-    "display": "어둠의 심연",
+    "name": "별잠든 심연",
+    "display": "별잠든 심연",
     "bossId": 58
   }
 ];
@@ -4820,3 +4821,10 @@ export const EQUIPMENT_REFERENCE = [
     "resale_price": 0
   }
 ];
+
+FISH.push(...EXTRA_FISH);
+REGIONS.push(...EXTRA_REGIONS);
+const motionMap={steady:'cruise',dart:'dart',zigzag:'eel',pulse:'float',dive:'glide',surge:'predator',sway:'glide',boss_charge:'predator',legendary:'predator'};
+for(const f of EXTRA_FISH)f.motion=motionMap[f.motionPattern]||(f.boss?'predator':'cruise');
+
+for(const f of EXTRA_FISH)if(!f.legendary)f.spriteSheet=f.spriteSheet.replace(".png","-transparent.png");

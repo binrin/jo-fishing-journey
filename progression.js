@@ -42,7 +42,7 @@ export const xpToNext=l=>l>=MAX_LEVEL?0:Math.round((120+(l+1)*40)*levelMultiplie
 const levelThresholds=[0,0];
 for(let level=2;level<=MAX_LEVEL;level++)levelThresholds[level]=levelThresholds[level-1]+xpToNext(level-1);
 export const xpForLevel=l=>levelThresholds[Math.max(1,Math.min(MAX_LEVEL,Math.floor(l)))];
-export const catchXP=(regionId,fish,grade)=>Math.round((24+fish.hp[grade]*.10+(fish.id%7)*2)*(1+regionId*.18)*(fish.boss?3:fish.ornamental?1.5:1));
+export const catchXP=(regionId,fish,grade)=>Math.round((24+(fish.hp[grade]>0?fish.hp[grade]:Math.max(...fish.hp)*1.25)*.10+(fish.id%7)*2)*(1+regionId*.18)*(fish.boss?3:fish.ornamental?1.5:1));
 export function playerLevel(s){let level=1;while(level<MAX_LEVEL&&s.xp>=xpForLevel(level+1))level++;return level;}
 // Advanced passive ranks give the new levels meaningful SP choices.
 for(const skill of SKILLS.filter(k=>['strength','vitality','knot','focus'].includes(k.id))){

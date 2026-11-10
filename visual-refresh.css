@@ -16,3 +16,9 @@
 #tensionAlert{background:#fff0d8;color:#8e3026;border-color:#ed9365}#tensionAlert span{color:#6f3e2f}
 @media(max-height:700px){.battle-mode .reel-status{width:112px;font-size:10px;bottom:7px}.battle-mode .reel-status small{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.bobber{animation:none}}
+
+.fight-timer{position:absolute;left:10px;right:10px;top:76px;z-index:4;text-align:center;background:#fff9e8ed;color:#164d51;padding:6px;border-radius:8px;font-size:13px;font-weight:bold;pointer-events:none}.fight-timer.urgent{background:#fff0df;color:#b52c16;outline:2px solid #f05030}
+
+.battle-mode .quest-chip{display:none}
+
+.scene[data-period="dawn"] .night-shade{opacity:1;background:linear-gradient(#513e7044,#e8bca522)}.scene[data-period="dusk"] .night-shade{opacity:1;background:linear-gradient(#f5a13c33,#d9603422)}

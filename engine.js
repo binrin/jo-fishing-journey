@@ -1,6 +1,7 @@
+import {advanceFishTravel} from './fish-travel.js';
 import {FISH,REGIONS} from './data.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,xpForLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS} from './progression.js';
-export const VERSION='2.2.0',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
+export const VERSION='2.3.0',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const STARTER=()=>({schema:3,coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'basic',pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:['strike','elastic','shock'],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='basic'?30:0])),home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
@@ -66,6 +67,7 @@ export function validateSave(raw){
 export function makeFight(s,f,g,castQuality=1){const r=region(s);return {fish:f,grade:g,hp:100,hero:s.hp,heroMax:maxHP(s),tension:0,elapsed:0,direction:1,nextTurn:2.8,skill:.3,burst:0,phase:1,legendary:Boolean(f.legendary),castQuality,damageRate:100/(f.boss?r.boss_fight:r.fight),gearFactor:(.85+s.tackleUpgrade*.04+Math.max(-.3,(s.tackle-s.region)*.08))*(1+(s.skills.strength||0)*.08)*(s.bait==='squid'?1.15:1),skills:{...s.skills},equipped:[...s.equippedSkills],cooldowns:{},effects:{elastic:0,shock:0,grit:0,slow:0},shockDps:0,protected:s.caught<3,overload:0,done:null};}
 export function fightStep(f,dt,input,rng=Math.random){if(f.done)return f;dt=clamp(dt,0,.1);f.elapsed+=dt;f.burst=Math.max(0,f.burst-dt);for(const k of Object.keys(f.cooldowns))f.cooldowns[k]=Math.max(0,f.cooldowns[k]-dt);for(const k of Object.keys(f.effects))f.effects[k]=Math.max(0,f.effects[k]-dt);if(f.effects.shock>0)f.hp-=f.shockDps*dt;if(f.effects.bleed>0)f.hp-=(12+6*(f.skills.bleed||0))/6*dt;
  f.nextTurn-=dt*(f.effects.slow>0?.45:1);if(f.nextTurn<=0){f.direction=rng()<.5?-1:1;f.nextTurn=(2.2+rng()*2)*({dart:.72,eel:.9,glide:1.3,crawl:1.4,float:1.5,predator:.8}[f.fish.motion]||1)/(f.legendary?1+(f.phase-1)*.18:1);if(f.fish.boss&&f.effects.slow<=0&&rng()<.4)f.burst=1.2;}
+ advanceFishTravel(f,dt);
  const correct=input===-f.direction,pulling=input!==0,guard=f.effects.grit>0;
  if(pulling){if(f.effects.elastic<=0)f.tension+=(f.burst>0?27:13)*(f.legendary?1+(f.phase-1)*.12:1)*(1-(f.skills.knot||0)*.05)*dt;if(correct){f.hp-=f.damageRate*f.gearFactor*f.castQuality*(f.effects.surge>0?1+(f.skills.surge||0)*.3:1)*dt;if(!guard)f.hero-=.12*dt;f.skill+=dt/12*(1+(f.skills.reserve||0)*.05);}else{if(!guard)f.hero-=8*dt;if(f.effects.elastic<=0)f.tension+=6*dt;}}
  else f.tension-=25*dt;

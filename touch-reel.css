@@ -24,3 +24,17 @@
 @keyframes reel-spin{to{transform:rotate(360deg)}}
 @media(max-height:700px){#game:not(.town-view){grid-template-rows:46px 32px minmax(110px,1fr) 30px 53px 32px 22px 85px 50px}#game.battle-mode{grid-template-rows:46px 32px minmax(110px,1fr) 56px 34px 24px 94px}.controls #reelBtn{width:82px;height:82px}.reel-spool{inset:15px}.reel-spool:before,.reel-spool:after{top:17px}.reel-handle{left:38px;top:38px}.battle-mode .wild-fish{width:130px;height:130px}.battle-mode .wild-fish.boss-fish{width:155px;height:155px}.controls #actionBtn{height:58px}.battle-mode .fight-label{font-size:12px;top:21%}.battle-mode .fight-label b{font-size:18px}.reel-status{font-size:12px;left:7px}.controls #skillBtn{right:13px;bottom:15px}.battle-mode .instruction{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.reel-spool,.reel-handle{animation:none!important}}
+/* The reel sits directly on the water, with usable water on both sides. */
+#game.battle-mode{grid-template-rows:54px 36px minmax(160px,1fr) 65px 42px 26px}
+.battle-mode #scene>.controls{position:absolute;left:0;right:0;bottom:0;height:112px;z-index:9;border:0;background:linear-gradient(transparent,#143f4938);pointer-events:none;padding:5px 12px 10px}
+.battle-mode #reelBtn{pointer-events:auto}.battle-mode #skillBtn{display:none}
+.battle-mode .reel-status{color:#fff9dc;text-shadow:0 1px 3px #123b43;top:34px;pointer-events:none}.battle-mode .reel-status small{color:#fff4cc}
+.battle-mode #scene>.controls:after{content:'반대쪽 수면\A터치해 감기';white-space:pre;position:absolute;right:9px;top:36px;width:calc(50% - 62px);text-align:center;font-size:12px;line-height:1.6;color:#fff9dc;text-shadow:0 1px 3px #123b43;pointer-events:none}
+@media(max-height:700px){#game.battle-mode{grid-template-rows:46px 32px minmax(110px,1fr) 56px 34px 24px}.battle-mode #scene>.controls{height:96px}.battle-mode .reel-status{top:28px}.battle-mode #scene>.controls:after{top:30px;font-size:11px}}
+
+/* Rear view: the angler sits below the fish and casts toward the far water. */
+#scene>.hero,.battle-mode #scene>.hero{left:50%;bottom:8px;width:auto;height:47%;max-height:225px;max-width:48%;transform:translateX(-50%);object-fit:contain;opacity:1}
+.battle-mode #scene>.hero{bottom:104px;height:32%;max-height:205px}
+.casting-mode .fishing-line{display:block}.bobber{left:50%;top:28%}
+.battle-mode .wild-fish{transition:top .12s linear,opacity .3s}
+@media(max-height:700px){#scene>.hero{max-height:170px}.battle-mode #scene>.hero{bottom:88px;height:30%;max-height:150px}}

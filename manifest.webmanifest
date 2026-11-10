@@ -1,1 +1,26 @@
-{"name":"조선생의 낚시여행","short_name":"조선생 낚시","description":"열 개의 물가에서 시작되는 나만의 낚시 여행","lang":"ko","start_url":"./","scope":"./","display":"standalone","orientation":"portrait-primary","background_color":"#123f47","theme_color":"#123f47","icons":[{"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
+{
+  "name": "조선생의 낚시여행",
+  "short_name": "조선생 낚시",
+  "description": "조선생과 함께 떠나는 30개 낚시터의 낚시 여행",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#123f47",
+  "theme_color": "#123f47",
+  "icons": [
+    {
+      "src": "assets/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

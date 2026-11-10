@@ -1,6 +1,8 @@
 import {FISH} from './data.js';
-export function fishStyle(id){const f=FISH[id],sheet=f?.spriteSheet||'fish.png',i=f?.spriteIndex??id;
- return f?.legendary?'background-image:url(assets/legend-transparent.png);background-size:contain;background-position:center;background-repeat:no-repeat':`background-image:url(assets/${sheet});background-size:800% 800%;background-position:${i%8/7*100}% ${Math.floor(i/8)/7*100}%`;
+export function fishStyle(id){const f=FISH[id];
+ if(f?.legendary)return 'background-image:url(assets/fish-real-legend.png);background-size:contain;background-position:center;background-repeat:no-repeat';
+ const group=id<59?0:1+Math.floor((id-59)/64),i=id<59?id:(id-59)%64;
+ return `background-image:url(assets/fish-real-${group}.png);background-size:800% 800%;background-position:${i%8/7*100}% ${Math.floor(i/8)/7*100}%;background-repeat:no-repeat`;
 }
 export const sprite=(id,cls='')=>`<span class="sprite ${cls}" style="${fishStyle(id)}"></span>`;
 export const waterStyle=id=>id<10?`background-image:url(assets/waters.png);background-size:200% 500%;background-position:${id%2*100}% ${Math.floor(id/2)*25}%`:`background-image:url(assets/waters-extra.png);background-size:400% 500%;background-position:${(id-10)%4/3*100}% ${Math.floor((id-10)/4)*25}%`;

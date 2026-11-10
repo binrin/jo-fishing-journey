@@ -1,0 +1,18 @@
+/* Natural tackle, touch-only fighting and light, legible controls. */
+.bobber{width:20px;height:60px;transform:translate(-50%,-78%);animation:float-rock 2.6s ease-in-out infinite;filter:drop-shadow(0 1px 1px #ffffffb0);pointer-events:none}
+.bobber img{display:block;width:100%;height:100%;object-fit:contain}
+.casting-mode .bobber:after{left:-10px;top:78%;width:38px;height:9px;border:1px solid #eaffff;box-shadow:0 0 0 2px #3b9daf44}
+@keyframes float-rock{50%{rotate:3deg;translate:0 2px}}
+#game .icon-button,#game .wallet button,#game .weather{background:#fff7df;color:#234b50;border:1px solid #dbc999;box-shadow:0 2px 0 #baab8655}
+#game .bottom-nav{background:#fff6df;border-color:#d9c89a}#game .bottom-nav button{background:#fffdf4;color:#294e50;border:1px solid #dfd4b6;border-radius:9px}
+#game .journey-row button{background:#fff9e9;color:#2b5051}#game .journey-row small{color:#526f6a}
+.primary,.controls #actionBtn{background:linear-gradient(#ffeac0,#ffda87);color:#553b1b;border:1px solid #cda04f;box-shadow:0 3px 0 #be9855}.primary:active,.controls #actionBtn:active{background:#f6cf72}
+.secondary,.setting-row button,.modal-head button,.slot-button{background:#e8f7ee;color:#28544c;border:1px solid #bad9c9}
+#game .active-skills button,#game .controls .skill{background:#f3edff;color:#574375;border:1px solid #cdbce7}#game .active-skills button:disabled{opacity:1;background:#f1eee8;color:#706a60}#game .active-skills button:disabled b,#game .active-skills button:disabled small{color:#706a60}
+#game .map-spot small{background:#fffdf0;color:#33554b;border:1px solid #d3c49c}#game .map-spot span{background:#fff8dd;color:#523d25}
+#game .battle-mode .instruction,.battle-mode .instruction{background:#fff4cf;color:#34554d}.battle-mode .instruction.danger{background:#ffe2d1;color:#852e20}
+.battle-mode .reel-status{background:#fff9e8ee;color:#294c51;border:1px solid #cfc399;width:133px;bottom:12px;left:8px;box-shadow:0 2px 6px #173f4320}.battle-mode .reel-status small{color:#48685f;font-size:10px}
+.tension-critical .reel-status{background:#fff0de;color:#952c25;border-color:#d65945}
+#tensionAlert{background:#fff0d8;color:#8e3026;border-color:#ed9365}#tensionAlert span{color:#6f3e2f}
+@media(max-height:700px){.battle-mode .reel-status{width:112px;font-size:10px;bottom:7px}.battle-mode .reel-status small{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.bobber{animation:none}}

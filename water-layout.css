@@ -1,0 +1,23 @@
+:root{color-scheme:only light}
+#game:not(.town-view):not(.battle-mode){grid-template-rows:54px 36px minmax(160px,1fr) 34px 82px 40px 25px 104px 58px}
+#game.battle-mode{grid-template-rows:54px 36px minmax(160px,1fr) 82px 42px 26px}
+#scene>.hero,.battle-mode #scene>.hero{bottom:2px;height:28%;max-height:180px;max-width:42%}
+.battle-mode #scene>.controls{height:102px;background:none;justify-content:flex-end;padding:0 12px 9px}
+.battle-mode #scene>.controls:after{display:none}
+.battle-mode .reel-status{left:10px;top:auto;bottom:15px;width:112px;padding:6px;border-radius:10px;background:#173f4ded;color:#fff;text-shadow:none;font-size:12px}
+.battle-mode .reel-status small{font-size:10px;color:#fff}
+.bobber{left:50%;top:67%;filter:drop-shadow(0 1px 2px #fff)}
+.casting-mode .bobber:after{content:'';position:absolute;left:-13px;top:13px;width:38px;height:11px;border:2px solid #e4ffff;border-radius:50%;box-shadow:0 0 0 3px #1f9eac55;pointer-events:none}
+#game .instruments{background:#fffdf4;color:#102c40;border-top:2px solid #d6e6e7;forced-color-adjust:none;padding:6px 12px}
+#game .meter-row{gap:12px}#game .meter-row label{font-size:13px;font-weight:700;color:#183448;align-items:center;gap:3px}
+#game .meter-row b,#game .tension>b{background:#153448;color:#fff;border:1px solid #fff;border-radius:6px;padding:1px 6px;font-size:15px;line-height:19px;min-width:39px;text-align:center}
+#game .instruments .bar{height:13px;background:#243e50;border:1px solid #7893a3;box-shadow:inset 0 1px 2px #071924;border-radius:7px}
+#game #heroBar{background:#50f49a;box-shadow:inset 0 2px 0 #b8ffdc}
+#game #fishBar{background:#ffd84a;box-shadow:inset 0 2px 0 #fff0ad}
+#game #tensionBar{background:#52dfff;box-shadow:inset 0 2px 0 #c7f8ff}
+#game.tension-warning #tensionBar{background:#ffbd43}#game.tension-critical #tensionBar{background:#ff6587;box-shadow:inset 0 2px 0 #ffc9d5}
+#game .tension{margin-top:5px;gap:7px;color:#183448;font-size:12px;font-weight:700}
+#game .tension>b{width:49px}#game .danger-mark{background:#fff;height:100%;width:3px;left:90%}
+#game.tension-critical .tension .bar{outline:2px solid #df375e;outline-offset:1px}
+@media(max-height:700px){#game.battle-mode{grid-template-rows:46px 32px minmax(110px,1fr) 76px 34px 24px}.battle-mode #scene>.controls{height:91px;padding-right:9px}.battle-mode .reel-status{width:90px;font-size:11px;left:6px;bottom:12px}#game .instruments{padding:4px 10px}#game .meter-row label{font-size:12px}#game .meter-row b,#game .tension>b{font-size:14px;line-height:18px}#game .instruments .bar{height:12px}}
+@media(max-height:700px){#game:not(.town-view):not(.battle-mode){grid-template-rows:46px 32px minmax(90px,1fr) 26px 76px 32px 22px 70px 45px}}

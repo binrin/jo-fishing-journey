@@ -1,0 +1,11 @@
+#tensionAlert{display:none;position:absolute;left:50%;top:29%;transform:translateX(-50%);z-index:8;width:max-content;max-width:90%;padding:9px 16px;border:2px solid #ffdc97;border-radius:12px;background:#713b22ef;color:#fff4d3;text-align:center;pointer-events:none;box-shadow:0 3px 14px #241b1b50}
+#tensionAlert strong{display:block;font-size:17px}#tensionAlert span{display:block;font-size:12px;margin-top:3px}
+.battle-mode.tension-warning #tensionAlert,.battle-mode.tension-critical #tensionAlert{display:block}
+.battle-mode.tension-critical #tensionAlert{background:#a62120f5;border-color:#ffe4aa}
+#game.tension-critical:after{content:'';position:absolute;inset:0;z-index:25;pointer-events:none;border:5px solid #ef4c35;box-shadow:inset 0 0 32px #dc3b3470;border-radius:inherit;animation:line-warning-breathe 1.4s ease-in-out infinite}
+#game{position:relative}.tension-warning .fishing-line path{stroke:#ffcb65;stroke-width:5}.tension-critical .fishing-line path{stroke:#ff5c49;stroke-width:7;filter:drop-shadow(0 0 3px #ffdf9d)}
+.tension-warning .tension{font-weight:bold;color:#95500a}.tension-critical .tension{color:#a82120;font-weight:bold}.tension-critical .tension .bar{outline:2px solid #c6392b;outline-offset:2px}
+.tension-critical #reelBtn{outline:4px solid #e94f36;outline-offset:3px}.tension-critical .reel-label{background:#a62120;color:white}.tension-critical .reel-status{color:#a62120;font-weight:bold}
+@keyframes line-warning-breathe{50%{box-shadow:inset 0 0 48px #dc3b3450;border-color:#ffad75}}
+@media(max-height:700px){#tensionAlert{top:35%;padding:7px 12px}#tensionAlert strong{font-size:15px}#tensionAlert span{font-size:11px}}
+@media(prefers-reduced-motion:reduce){#game.tension-critical:after{animation:none}}

@@ -24,8 +24,9 @@ export function createCombatFX({scene,layer,target,getState}){
   const group=document.createElement('div');const rod=rodEffect(getState());group.className='impact-group '+kind+' rod-motif-'+rod.motif;group.style.setProperty('--rod-color',`hsl(${rod.hue} 90% 62%)`);group.style.setProperty('--rod-glow',`${4+rod.rank*2}px`);group.style.left=x+'px';group.style.top=y+'px';
   const label=document.createElement('strong');label.className='damage-pop';label.textContent=text;group.append(label);
   const ring=document.createElement('i');ring.className='impact-ring';group.append(ring);
-  if(!reduced())for(let i=0;i<(kind==='hit'?5:10);i++){const p=document.createElement('i');p.className='impact-spark';const a=i*Math.PI*2/(kind==='hit'?5:10);p.style.setProperty('--dx',Math.cos(a)*(kind==='hit'?29:58)+'px');p.style.setProperty('--dy',Math.sin(a)*(kind==='hit'?23:45)+'px');p.style.setProperty('--rot',i*31+'deg');group.append(p);}
+  if(!reduced()&&kind!=='miss')for(let i=0;i<(kind==='hit'?5:10);i++){const p=document.createElement('i');p.className='impact-spark';const a=i*Math.PI*2/(kind==='hit'?5:10);p.style.setProperty('--dx',Math.cos(a)*(kind==='hit'?29:58)+'px');p.style.setProperty('--dy',Math.sin(a)*(kind==='hit'?23:45)+'px');p.style.setProperty('--rot',i*31+'deg');group.append(p);}
   layer.append(group);while(layer.children.length>12)layer.firstElementChild.remove();setTimeout(()=>group.remove(),850);
+  if(kind==='miss')return;
   if(!reduced()){const force=kind==='critical'||kind==='strike'?4:kind==='shock'?3:1.2;scene.animate([{transform:'translate(0,0)'},{transform:'translate('+(-force)+'px,'+(force/2)+'px)'},{transform:'translate('+force+'px,'+(-force/2)+'px)'},{transform:'translate(0,0)'}],{duration:kind==='hit'?110:220});target.animate([{filter:'brightness(1)'},{filter:'brightness('+(kind==='hit'?1.6:2.2)+')'},{filter:'brightness(1)'}],{duration:170});}
   if(getState().haptics&&navigator.vibrate)navigator.vibrate(kind==='hit'?8:kind==='critical'?[20,25,35]:18);
  }

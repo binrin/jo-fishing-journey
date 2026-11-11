@@ -98,9 +98,9 @@ document.addEventListener('pointerdown',()=>{if(!state.muted){try{context??=new 
 const water=$('scene');
 water.addEventListener('pointerdown',e=>{
  if(e.target.closest('button')||modal.open||paused||view!=='fish')return;e.preventDefault();
- if(phase!=='fight'){action();return;}
- const r=water.getBoundingClientRect();reelInput.waterDown(e.pointerId,e.clientX,r.left,r.width);input=reelInput.input;water.setPointerCapture(e.pointerId);
- if(input===-fight.direction){fx.impact('hit','탁!');sound('hit');}syncReel();
+ if(phase!=='fight'){action();if(phase!=='fight'||!fight)return;fx.update(fight,performance.now()/1000);}
+ const r=water.getBoundingClientRect();reelInput.waterDown(e.pointerId,e.clientX,r.left,r.width);input=reelInput.input;try{water.setPointerCapture(e.pointerId);}catch{}
+ if(input===-fight.direction){fx.impact('hit','탁!',true);sound('hit');hitClock=0;}else fx.impact('miss',fight.direction>0?'◀ 왼쪽을 터치!':'오른쪽을 터치! ▶',true);syncReel();
 });
 water.addEventListener('pointermove',e=>{if(phase!=='fight')return;const r=water.getBoundingClientRect();reelInput.waterMove(e.pointerId,e.clientX,r.left,r.width);input=reelInput.input;});
 

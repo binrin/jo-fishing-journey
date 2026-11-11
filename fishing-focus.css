@@ -140,3 +140,8 @@
  #game#game:not(.town-view)>.controls #actionBtn{width:min(150px,46vw)}
  #game#game:not(.town-view)>.journey-row{width:calc((100% - min(150px,46vw))/2 - 12px)}
 }
+
+/* v2.9.1 battle: the angler sits low in the middle of the reel overlay so the fish has room above his head */
+@media not all and (max-height:520px) and (orientation:landscape){
+ #game#game.battle-mode #scene>.hero{bottom:6px;height:min(21cqh,170px);max-height:none;max-width:34%}
+}

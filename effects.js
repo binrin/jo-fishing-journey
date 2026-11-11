@@ -1,5 +1,5 @@
 import {rodEffect} from './equipment.js';
-import {fishApproach} from './fish-travel.js';
+import {fishApproach,approachY} from './fish-travel.js';
 import {FISH} from './data.js';
 import {travelFamily} from './fish-travel.js';
 export function motionFamily(id){return travelFamily(FISH[id]||{id});}
@@ -30,7 +30,7 @@ export function createCombatFX({scene,layer,target,getState}){
   if(!reduced()){const force=kind==='critical'||kind==='strike'?4:kind==='shock'?3:1.2;scene.animate([{transform:'translate(0,0)'},{transform:'translate('+(-force)+'px,'+(force/2)+'px)'},{transform:'translate('+force+'px,'+(-force/2)+'px)'},{transform:'translate(0,0)'}],{duration:kind==='hit'?110:220});target.animate([{filter:'brightness(1)'},{filter:'brightness('+(kind==='hit'?1.6:2.2)+')'},{filter:'brightness(1)'}],{duration:170});}
   if(getState().haptics&&navigator.vibrate)navigator.vibrate(kind==='hit'?8:kind==='critical'?[20,25,35]:18);
  }
- function update(f,time){const m=fishMotion(f.fish.id,time,f.direction,f.fish.boss);const approach=fishApproach(f);const size=Math.min(f.fish.boss?175:145,scene.clientHeight*.24)*approach.scale;target.style.width=size+'px';target.style.height=size+'px';f.edgePadding=Math.min(38,Math.max(8,target.offsetWidth*.5/scene.clientWidth*100+2));m.x=f.screenX??50;m.y=approach.y+(m.y-64)*.16;target.style.left=m.x+'%';target.style.top=m.y+'%';target.style.transform='translate(-50%,-50%) rotate('+m.angle+'deg) scale('+m.stretch+','+(2-m.stretch)+')';target.dataset.motion=m.family;scene.classList.toggle('elastic-aura',f.effects.elastic>0);scene.classList.toggle('electric-aura',f.effects.shock>0);scene.classList.toggle('grit-aura',f.effects.grit>0);}
+ function update(f,time){const m=fishMotion(f.fish.id,time,f.direction,f.fish.boss);const approach=fishApproach(f);const base=Math.min(f.fish.boss?175:145,scene.clientHeight*.24),size=base*approach.scale,hero=scene.querySelector('.hero'),heroTop=hero&&hero.offsetHeight?hero.getBoundingClientRect().top-scene.getBoundingClientRect().top:0;approach.y=approachY(approach.progress,scene.clientHeight,heroTop,base*1.1);target.style.width=size+'px';target.style.height=size+'px';f.edgePadding=Math.min(38,Math.max(8,target.offsetWidth*.5/scene.clientWidth*100+2));m.x=f.screenX??50;m.y=approach.y+(m.y-64)*.16;target.style.left=m.x+'%';target.style.top=m.y+'%';target.style.transform='translate(-50%,-50%) rotate('+m.angle+'deg) scale('+m.stretch+','+(2-m.stretch)+')';target.dataset.motion=m.family;scene.classList.toggle('elastic-aura',f.effects.elastic>0);scene.classList.toggle('electric-aura',f.effects.shock>0);scene.classList.toggle('grit-aura',f.effects.grit>0);}
  function clear(){visualX=60;lastMotionTime=null;layer.replaceChildren();scene.classList.remove('elastic-aura','electric-aura','grit-aura');target.style.transform='';}
  return {impact,update,clear};
 }

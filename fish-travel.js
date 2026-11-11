@@ -19,3 +19,12 @@ export function advanceFishTravel(f,dt){
 
 // Legendary phases retain distance progress instead of jumping back offshore.
 export function fishApproach(f){const total=f.legendary?3:1;const progress=Math.max(0,Math.min(1,((f.legendary?f.phase-1:0)+(1-Math.max(0,f.hp)/100))/total));return {progress,y:62+progress*17,scale:.46+progress*.64};}
+
+// Keep the closest approach above the angler's head: the fish never overlaps the hero.
+// sceneH/heroTop in px, nearSize = fish size at its closest (px). Returns the fish centre as % of scene height.
+export function approachY(progress,sceneH,heroTop,nearSize){
+ const p=Math.max(0,Math.min(1,progress||0));if(!(sceneH>0))return 62+p*17;
+ const top=heroTop>0&&heroTop<sceneH?heroTop:sceneH;
+ const near=Math.max(30,Math.min(79,(top-nearSize*.62)/sceneH*100-3)),far=Math.min(62,near-7);
+ return far+(near-far)*p;
+}

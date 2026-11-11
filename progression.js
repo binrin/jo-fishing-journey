@@ -33,7 +33,7 @@ export const BAITS=[{id:'basic',name:'기본 미끼',factor:1,description:'이 �
 extendProgression(BOATS,TACKLE,HOMES,SKILLS,BAITS,STAGE_BUDGETS,TARGET_CATCHES);
 // v2.8: boats now speed up bites and ease line tension, so boat and tackle prices are scaled
 // to keep the normal-profile journey at ~350h (measured with tools/simulate_expansion.mjs).
-export const PRICE_SCALE=1.1;
+export const PRICE_SCALE=1.14;
 for(const b of BOATS){b.price=Math.round(b.price*PRICE_SCALE);b.resale=Math.round(b.resale*PRICE_SCALE);}
 for(const t of TACKLE){t.price=Math.round(t.price*PRICE_SCALE);t.total=Math.round(t.total*PRICE_SCALE);t.upgrades=t.upgrades.map(x=>Math.round(x*PRICE_SCALE));}
 export {REGION_LEVELS};

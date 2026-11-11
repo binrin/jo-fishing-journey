@@ -1,9 +1,10 @@
+import {restoreEquipment,equipmentStats} from './equipment.js';
 import {gameTime,activityWeight,weightedFish} from './ecology.js';
 import {availableFish,fishPeriod,fishWeight} from './catch-rules.js';
 import {advanceFishTravel} from './fish-travel.js';
 import {FISH,REGIONS} from './data.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,xpForLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS} from './progression.js';
-export const VERSION='2.5.1',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
+export const VERSION='2.6.0',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const STARTER=()=>({schema:3,coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'basic',pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:['strike','elastic','shock'],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='basic'?30:0])),home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
@@ -24,7 +25,7 @@ export function selectBoat(s,id){if(!s.ownedBoats.includes(id)||s.bag.length>BOA
 export function sellBoat(s,id){if(id===0||!s.ownedBoats.includes(id))return false;const other=s.ownedBoats.filter(n=>n!==id).sort((a,b)=>b-a);if(s.boat===id){const replacement=other.find(n=>BOATS[n].capacity>=s.bag.length);if(replacement==null)return false;s.boat=replacement;}s.ownedBoats=other;credit(s,BOATS[id].resale);return true;}
 export function surveyProgress(s,id=s.region){const species=(s.regionSpecies[id]||[]).length,trophies=s.trophies[id]||0,targetSpecies=id<10?0:3,targetTrophies=id<10?0:5;return {species,trophies,targetSpecies,targetTrophies,complete:species>=targetSpecies&&trophies>=targetTrophies};}
 export function legendReady(s){return playerLevel(s)>=100&&s.boat===BOATS.length-1&&s.tackle===TACKLE.length-1&&s.tackleUpgrade===5&&REGIONS.slice(0,-1).every(r=>r.bossId==null||s.bosses.includes(r.bossId))&&s.counts[29]>=REGIONS[29].minimum_catches&&surveyProgress(s,29).complete;}
-export function gate(s){const r=region(s),next=Math.min(REGIONS.length-1,s.region+1);return {gear:s.tackle>=s.region&&s.tackleUpgrade>=5,catches:s.counts[s.region]>=r.minimum_catches,boss:r.bossId==null||s.bosses.includes(r.bossId),boat:BOATS[s.boat].region>=next,level:playerLevel(s)>=(s.region===REGIONS.length-1?100:REGION_LEVELS[next]),survey:surveyProgress(s).complete};} 
+export function gate(s){const r=region(s),next=Math.min(REGIONS.length-1,s.region+1);return {gear:s.tackle>s.region||s.tackle===s.region&&s.tackleUpgrade>=5,catches:s.counts[s.region]>=r.minimum_catches,boss:r.bossId==null||s.bosses.includes(r.bossId),boat:BOATS[s.boat].region>=next,level:playerLevel(s)>=(s.region===REGIONS.length-1?100:REGION_LEVELS[next]),survey:surveyProgress(s).complete};} 
 export function travel(s,id){if(!Number.isInteger(id)||id<0||id>=REGIONS.length||id>BOATS[s.boat].region||playerLevel(s)<REGION_LEVELS[id]||s.hp<=0)return false;if(id<=s.unlocked){s.region=id;return true;}if(id!==s.unlocked+1||s.region!==s.unlocked||!Object.values(gate(s)).every(Boolean))return false;s.unlocked=id;s.region=id;return true;}
 export function finish(s){if(s.region!==REGIONS.length-1||!s.legendTrophy||s.ended||!Object.values(gate(s)).every(Boolean))return false;s.ended=true;return true;}
 export function sleep(s){s.hp=maxHP(s);s.dayOffset+=300;return s.hp;}
@@ -34,7 +35,7 @@ export function learnSkill(s,id){const k=SKILLS.find(x=>x.id===id),rank=s.skills
 export function equipSkill(s,id,slot){if(!Number.isInteger(slot)||slot<0||slot>2||!s.skills[id]||!SKILLS.some(k=>k.id===id&&k.type==='active'))return false;const old=s.equippedSkills.indexOf(id);if(old>=0)[s.equippedSkills[old],s.equippedSkills[slot]]=[s.equippedSkills[slot],s.equippedSkills[old]];else s.equippedSkills[slot]=id;return true;}
 export function chooseFish(s,rng=Math.random,boss=false){
  const r=region(s);if(s.region>BOATS[s.boat].region)return null;
- if(boss){if(r.bossId==null||s.bosses.includes(r.bossId)||s.tackle<s.region||s.tackleUpgrade<2||s.counts[s.region]<r.minimum_catches)return null;const f=FISH[r.bossId];if(f.legendary&&!legendReady(s))return null;return activityWeight(f,s)<=0?null:f;}
+ if(boss){if(r.bossId==null||s.bosses.includes(r.bossId)||s.tackle<s.region||s.tackle===s.region&&s.tackleUpgrade<2||s.counts[s.region]<r.minimum_catches)return null;const f=FISH[r.bossId];if(f.legendary&&!legendReady(s))return null;return activityWeight(f,s)<=0?null:f;}
  let pool=availableFish(s.region,s);
  const rareBait=s.bait==='golden'||s.bait==='pearl'||s.bait==='glow'&&isNight(s);if(rareBait){const rare=pool.filter(f=>f.ornamental);if(rare.length){const chance=s.bait==='pearl'?.1:s.bait==='glow'?.08:.04,limit=s.bait==='pearl'?20:s.bait==='glow'?30:60;s.pity[s.region]++;if(s.pity[s.region]>=limit||rng()<chance){s.pity[s.region]=0;return weightedFish(rare,s,rng);}}}
  pool=pool.filter(f=>!f.ornamental);return weightedFish(pool,s,rng);
@@ -64,23 +65,23 @@ export function validateSave(raw){
  s.regionSpecies={};for(const [key,ids]of Object.entries(raw.regionSpecies||{})){if(REGIONS[key]&&Array.isArray(ids))s.regionSpecies[key]=[...new Set(ids.filter(id=>FISH[id]&&!FISH[id].boss&&FISH[id].regions.includes(Number(key))))];}
  s.trophies=Array.from({length:REGIONS.length},(_,i)=>Number.isInteger(raw.trophies?.[i])&&raw.trophies[i]>=0?raw.trophies[i]:0);
  s.legendTrophy=Boolean(s.collection[239]);s.ended=s.ended&&s.legendTrophy;
- const ids=[...s.bag,...s.homeFish].map(x=>x.uid);if(new Set(ids).size!==ids.length||s.bag.length>capacity(s)||s.homeFish.length>HOMES[s.home].capacity)throw Error('수족관 용량 또는 중복 물고기를 확인하세요.');s.hp=clamp(s.hp,0,maxHP(s));return s;
+ const ids=[...s.bag,...s.homeFish].map(x=>x.uid);if(new Set(ids).size!==ids.length||s.bag.length>capacity(s)||s.homeFish.length>HOMES[s.home].capacity)throw Error('수족관 용량 또는 중복 물고기를 확인하세요.');s.hp=clamp(s.hp,0,maxHP(s));restoreEquipment(s,raw.equipment);return s;
 }
 export function fightPlan(s,f,g=1,quality=1){
  const r=region(s), valid=f.hp.filter(v=>v>0), hp=f.hp[g]>0?f.hp[g]:Math.max(...valid)*1.25;
  const species=.8+(f.id%7)*.05, size=Math.sqrt(hp/(valid.reduce((a,b)=>a+b,0)/valid.length));
  const base=(f.boss?r.boss_fight:r.fight)*species*size;
- const gearFactor=Math.max(.12,.7+s.tackleUpgrade*.12+(s.tackle-s.region)*.25)*(1+(s.skills.strength||0)*.08)*(s.bait==='squid'?1.15:1);
+ const gearFactor=equipmentStats(s).power*(1+(s.skills.strength||0)*.08)*(s.bait==='squid'?1.15:1);
  const phases=f.legendary?3:1, expected=base*phases/(gearFactor*quality)*1.5;
  const limit=Math.ceil(base*phases*(s.region===0?2.4:1.75)/1.06);
  return {base,gearFactor,expected,limit:s.caught<3?Math.max(120,limit):limit};
 }
-export function makeFight(s,f,g,castQuality=1){const plan=fightPlan(s,f,g,castQuality);return {fish:f,grade:g,hp:100,hero:s.hp,heroMax:maxHP(s),tension:0,elapsed:0,timeLimit:plan.limit,expectedSeconds:plan.expected,strokeLeft:0,lastInput:0,criticalCycle:-1,direction:1,nextTurn:2.8,skill:.3,burst:0,phase:1,legendary:Boolean(f.legendary),castQuality,damageRate:100/plan.base,gearFactor:plan.gearFactor,skills:{...s.skills},equipped:[...s.equippedSkills],cooldowns:{},effects:{elastic:0,shock:0,grit:0,slow:0},shockDps:0,protected:s.caught<3,overload:0,done:null};}
+export function makeFight(s,f,g,castQuality=1){const plan=fightPlan(s,f,g,castQuality);return {fish:f,grade:g,hp:100,hero:s.hp,heroMax:maxHP(s),tension:0,elapsed:0,timeLimit:plan.limit,expectedSeconds:plan.expected,strokeLeft:0,lastInput:0,criticalCycle:-1,direction:1,nextTurn:2.8,skill:.3,burst:0,phase:1,legendary:Boolean(f.legendary),castQuality,damageRate:100/plan.base,gearFactor:plan.gearFactor,tensionFactor:equipmentStats(s).tension,skills:{...s.skills},equipped:[...s.equippedSkills],cooldowns:{},effects:{elastic:0,shock:0,grit:0,slow:0},shockDps:0,protected:s.caught<3,overload:0,done:null};}
 export function fightStep(f,dt,input,rng=Math.random){if(f.done)return f;dt=clamp(dt,0,.1);f.elapsed+=dt;if(input){f.lastInput=input;f.strokeLeft=.18;}else if(f.strokeLeft>0){f.strokeLeft=Math.max(0,f.strokeLeft-dt);input=f.lastInput;}f.effectiveInput=input;f.burst=Math.max(0,f.burst-dt);for(const k of Object.keys(f.cooldowns))f.cooldowns[k]=Math.max(0,f.cooldowns[k]-dt);for(const k of Object.keys(f.effects))f.effects[k]=Math.max(0,f.effects[k]-dt);if(f.effects.shock>0)f.hp-=f.shockDps*dt;if(f.effects.bleed>0)f.hp-=(12+6*(f.skills.bleed||0))/6*dt;
  f.nextTurn-=dt*(f.effects.slow>0?.45:1);if(f.nextTurn<=0){f.direction=rng()<.5?-1:1;f.nextTurn=(2.2+rng()*2)*({dart:.72,eel:.9,glide:1.3,crawl:1.4,float:1.5,predator:.8}[f.fish.motion]||1)/(f.legendary?1+(f.phase-1)*.18:1);if(f.fish.boss&&f.effects.slow<=0&&rng()<.4)f.burst=1.2;}
  advanceFishTravel(f,dt);
  const correct=input===-f.direction,pulling=input!==0,guard=f.effects.grit>0;
- if(pulling){if(f.effects.elastic<=0)f.tension+=(f.burst>0?27:13)*(f.legendary?1+(f.phase-1)*.12:1)*(1-(f.skills.knot||0)*.05)*dt;if(correct){critical(f);f.hp-=f.damageRate*f.gearFactor*f.castQuality*(f.effects.surge>0?1+(f.skills.surge||0)*.3:1)*dt;if(!guard)f.hero-=.12*dt;f.skill+=dt/12*(1+(f.skills.reserve||0)*.05);}else{if(!guard)f.hero-=8*dt;if(f.effects.elastic<=0)f.tension+=6*dt;}}
+ if(pulling){if(f.effects.elastic<=0)f.tension+=(f.burst>0?27:13)*(f.legendary?1+(f.phase-1)*.12:1)*(1-(f.skills.knot||0)*.05)*(f.tensionFactor||1)*dt;if(correct){critical(f);f.hp-=f.damageRate*f.gearFactor*f.castQuality*(f.effects.surge>0?1+(f.skills.surge||0)*.3:1)*dt;if(!guard)f.hero-=.12*dt;f.skill+=dt/12*(1+(f.skills.reserve||0)*.05);}else{if(!guard)f.hero-=8*dt;if(f.effects.elastic<=0)f.tension+=6*dt;}}
  else f.tension-=25*dt;
  f.tension=clamp(f.tension,0,100);f.skill=clamp(f.skill,0,1);if(!f.legendary)f.phase=f.fish.boss?(f.hp<33?3:f.hp<66?2:1):1;if(f.tension>=99)f.overload+=dt;else f.overload=0;
  if(f.protected){f.hero=Math.max(25,f.hero);f.tension=Math.min(85,f.tension);f.overload=0;}if(f.hp<=0)resolveCatch(f);else if(f.hero<=0||f.overload>1.15){f.hero=Math.max(0,f.hero);f.done='lost';}if(!f.done&&f.elapsed>=f.timeLimit){f.done='lost';f.failure=f.fish.boss||f.tension>=65?'timeout-line':'timeout-bait';}return f;}

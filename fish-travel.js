@@ -16,3 +16,6 @@ export function advanceFishTravel(f,dt){
  if(f.screenX>=100-edge&&f.direction>0||f.screenX<=edge&&f.direction<0){f.direction*=-1;f.nextTurn=Math.max(1.2,f.nextTurn);}
  return f.screenX;
 }
+
+// Legendary phases retain distance progress instead of jumping back offshore.
+export function fishApproach(f){const total=f.legendary?3:1;const progress=Math.max(0,Math.min(1,((f.legendary?f.phase-1:0)+(1-Math.max(0,f.hp)/100))/total));return {progress,y:62+progress*17,scale:.46+progress*.64};}

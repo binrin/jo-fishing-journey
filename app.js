@@ -1,3 +1,4 @@
+import {ensureEquipment,fullyEquipped,changeEquipment,equipmentStats} from './equipment.js';
 import {gameTime,PERIODS,waitUntil,activityWeight,scheduleLabel,ecology} from './ecology.js';
 import {castTargets,castResult,fishPeriod,weightLabel} from './catch-rules.js';
 import {castLanding} from './water-layout.js';
@@ -13,6 +14,7 @@ import {createCombatFX} from './effects.js';
 const $=id=>document.getElementById(id), fmt=n=>Math.round(n).toLocaleString('ko-KR'), esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=STARTER(),storageWarning=false,loadError=false;
 try{const raw=localStorage.getItem(SAVE_KEY);if(raw)state=validateSave(JSON.parse(raw));}catch{loadError=true;}
+ensureEquipment(state);
 let view='town';
 let castAim=.5,castTarget={x:500,y:670},castFlight=1;
 let targets=castTargets(),perfectCast=false;
@@ -51,8 +53,9 @@ function resetIdle(message='다음 물결에는 어떤 친구가 기다릴까요
  $('fightTimer').hidden=true;fx.clear();hitClock=0;phase='idle';$('game').classList.remove('casting-mode');$('bobber').style.cssText='';fight=null;currentFish=null;bossTrip=false;releaseInput();$('castGauge').hidden=true;$('fightLabel').hidden=true;$('wildFish').classList.remove('visible');$('bobber').hidden=false;$('sceneMessage').textContent=message;$('sceneMessage').hidden=false;$('fishValue').textContent='—';$('fishBar').style.width='0%';$('heroValue').textContent=Math.ceil(state.hp);$('heroBar').style.width=`${state.hp/maxHP(state)*100}%`;$('tensionValue').textContent='0%';$('tensionBar').style.width='0%';$('skillFill').style.height='0%';$('skillBtn').disabled=false;$('leftBtn').disabled=true;$('rightBtn').disabled=true;setAction('낚시 시작','방향 · 힘 · 챔질');hint('수면을 터치해 낚시를 시작하세요');render();
 }
 function start(boss=false){
+ if(!fullyEquipped(state)){openPanel('equipment');toast('낚싯대·릴·찌·줄·바늘을 모두 장착해 주세요.');return;}
  if(phase!=='idle')return;if(state.hp<(boss?6:3)){openPanel('home');toast('집에서 잠을 자고 체력을 회복해 주세요.');return;}if(state.region>BOATS[state.boat].region){openPanel('map');toast('현재 배로 갈 수 있는 낚시터를 선택해 주세요.');return;}if(!boss&&state.baitStock[state.bait]<=0){openPanel('shop');toast('미끼가 떨어졌어요. 상점에서 준비해 주세요.');return;}view='fish';render();if(state.bag.length>=capacity(state)){toast('보관함이 가득 찼어요. 먼저 물고기를 판매해 주세요.');openPanel('market');return;}
- if(boss){const r=region(state);if(r.bossId==null||state.bosses.includes(r.bossId)||(state.tackle<state.region||state.tackleUpgrade<2)||state.counts[state.region]<r.minimum_catches){openPanel('goals');return;}const f=FISH[r.bossId];if(f.legendary&&!legendReady(state)){openPanel('goals');toast('천해룡의 단서와 최종 장비를 먼저 준비하세요.');return;}if(activityWeight(f,state)<=0){toast(`${f.name} 추천: ${scheduleLabel(f)}. 시간 버튼에서 기다려 주세요.`,4500);return;}}
+ if(boss){const r=region(state);if(r.bossId==null||state.bosses.includes(r.bossId)||(state.tackle<state.region||state.tackle===state.region&&state.tackleUpgrade<2)||state.counts[state.region]<r.minimum_catches){openPanel('goals');return;}const f=FISH[r.bossId];if(f.legendary&&!legendReady(state)){openPanel('goals');toast('천해룡의 단서와 최종 장비를 먼저 준비하세요.');return;}if(activityWeight(f,state)<=0){toast(`${f.name} 추천: ${scheduleLabel(f)}. 시간 버튼에서 기다려 주세요.`,4500);return;}}
  targets=castTargets();perfectCast=false;bossTrip=boss;phase='direction';cast=0;timer=0;$('castGauge').hidden=false;showCastTarget('direction');setAction('방향 선택','초록 구간에서!');hint('바늘을 초록 구간에 맞춰 보세요');$('sceneMessage').hidden=true;sound();
 }
 function action(){
@@ -67,7 +70,7 @@ function action(){
   currentGrade=perfectCast?0:fishGrade(currentFish,Math.random,chain,state);if(!bossTrip&&!chargeBait(state)){resetIdle();openPanel('shop');return;}state.hp=Math.max(0,state.hp-(bossTrip?5:2));state.attempts++;save();phase='waiting';timer=waitSeconds(state,state.caught===0?3.5:6+Math.random()*5);$('bobber').hidden=false;setAction('입질 기다림','찌를 지켜보세요');hint('찌가 쑥 내려가면 챔질!');$('sceneMessage').hidden=false;$('sceneMessage').textContent=perfectCast?'방향·힘 명중! 대물이 미끼를 향해 옵니다.':'살랑살랑… 물고기가 다가오고 있어요.';render();return;
  }
  if(phase==='waiting'){toast('아직이에요! 찌가 내려갈 때를 기다려요.');return;}
- if(phase==='bite'){phase='fight';fight=makeFight(state,currentFish,currentGrade,castQuality);$('fishSprite').style.cssText=fishStyle(currentFish.id);$('wildFish').classList.add('visible');$('wildFish').classList.toggle('boss-fish',bossTrip);$('fightLabel').hidden=false;$('fishName').textContent=(currentFish.legendary?'LEGEND · ':bossTrip?'BOSS · ':'')+currentFish.name;if(currentFish.legendary){fx.impact('critical','천해룡 아스트라 · 깨어남',true);toast('환상의 물고기가 모습을 드러냈어요. 세 번의 물결을 이겨내세요!',5000);};$('bobber').hidden=true;$('sceneMessage').hidden=true;$('leftBtn').disabled=false;$('rightBtn').disabled=false;setAction('손 떼고 쉬기','긴장을 낮춰요');sound('bite');buzz(35);return;}
+ if(phase==='bite'){phase='fight';fight=makeFight(state,currentFish,currentGrade,castQuality);fight.screenX=castTarget.x/10;$('fishSprite').style.cssText=fishStyle(currentFish.id);$('wildFish').classList.add('visible');$('wildFish').classList.toggle('boss-fish',bossTrip);$('fightLabel').hidden=false;$('fishName').textContent=(currentFish.legendary?'LEGEND · ':bossTrip?'BOSS · ':'')+currentFish.name;if(currentFish.legendary){fx.impact('critical','천해룡 아스트라 · 깨어남',true);toast('환상의 물고기가 모습을 드러냈어요. 세 번의 물결을 이겨내세요!',5000);};$('bobber').hidden=true;$('sceneMessage').hidden=true;$('leftBtn').disabled=false;$('rightBtn').disabled=false;setAction('손 떼고 쉬기','긴장을 낮춰요');sound('bite');buzz(35);return;}
  if(phase==='fight'){releaseInput();toast('수면에서 손을 떼면 줄이 풀려요.');}
 }
 $('actionBtn').onclick=action;
@@ -117,7 +120,7 @@ function tick(now){const dt=Math.min(.08,(now-last)/1000);last=now;
  if(!paused&&!modal.open&&!document.hidden){
   state.seconds+=dt;saveClock+=dt;hudClock+=dt;
   if(phase==='direction'||phase==='power'){timer+=dt;cast=(Math.sin(timer*(phase==='direction'?2.3:3.1))+1)/2;$('castNeedle').style.left=`${cast*98}%`;}
-  if(phase==='waiting'){timer-=dt;if(timer<=0){phase='bite';timer=(state.caught<3?5:2.4)+(state.skills.focus||0)*.2;setAction('지금 챔질!','지금 눌러요!');hint('입질! 수면을 터치해 챔질하세요',true);$('sceneMessage').textContent='왔다! 지금 챔질해요!';sound('bite');buzz([30,30,30]);}}
+  if(phase==='waiting'){timer-=dt;if(timer<=0){phase='bite';timer=(state.caught<3?5:2.4)+(state.skills.focus||0)*.2+equipmentStats(state).biteBonus;setAction('지금 챔질!','지금 눌러요!');hint('입질! 수면을 터치해 챔질하세요',true);$('sceneMessage').textContent='왔다! 지금 챔질해요!';sound('bite');buzz([30,30,30]);}}
   else if(phase==='bite'){timer-=dt;$('bobber').style.transform=`translate(-50%,calc(-78% + ${Math.sin(now/70)*9}px))`;if(timer<=0)fail('챔질 타이밍이 늦었어요. 다음 입질을 노려요!');}
   castVisual(dt);syncReel();if(phase==='fight'&&fight){input=reelInput.input;const oldPhase=fight.phase;fightStep(fight,dt,input);setDanger(reelFeedback.update({active:!fight.done,winding:fight.effectiveInput!==0,releasing:fight.effectiveInput===0&&fight.tension>0,tension:fight.tension,now,muted:state.muted,haptics:state.haptics}));if(fight.legendary&&fight.phase!==oldPhase){fx.impact('critical',['','깨어남','별빛 폭풍','마지막 해류'][fight.phase],true);toast(`천해룡 ${fight.phase}/3단계 · ${fight.phase===2?'별빛 폭풍':'마지막 해류'}`,4000);}if(fight.legendary)$('fishName').textContent=`LEGEND ${fight.phase}/3 · 천해룡 아스트라`;fx.update(fight,now/1000);const lineX=parseFloat($('wildFish').style.left)*10,lineY=parseFloat($('wildFish').style.top)*10,lineSag=fight.effectiveInput===0?170:Math.max(10,90-fight.tension);drawLine(lineX,lineY,lineSag);hitClock+=dt;if(fight.effectiveInput===-fight.direction&&hitClock>.38){hitClock=0;fx.impact('hit','탁!');sound('hit');}$('heroValue').textContent=Math.ceil(fight.hero);$('heroBar').style.width=`${fight.hero/fight.heroMax*100}%`;$('fishValue').textContent=Math.ceil(fight.hp);$('fishBar').style.width=`${fight.hp}%`;$('tensionBar').style.width=`${fight.tension}%`;$('tensionValue').textContent=`${Math.round(fight.tension)}%`;$('fishDirection').textContent=fight.direction===1?'→':'←';$('fishSprite').style.transform=(fight.direction===-1)?'scaleX(-1)':'none';$('skillFill').style.height=`${fight.skill*100}%`;$('skillBtn').disabled=false;renderActiveSkills();
    $('fightTimer').hidden=false;$('fightTimer').textContent=`남은 ${Math.max(0,Math.ceil(fight.timeLimit-fight.elapsed))}초 · 예상 ${Math.ceil(fight.expectedSeconds)}초${fight.expectedSeconds>fight.timeLimit?' · 장비 강화 권장':''}`;$('fightTimer').classList.toggle('urgent',fight.timeLimit-fight.elapsed<10);
@@ -181,9 +184,10 @@ function useActive(i){if(modal.open||paused)return;const id=state.equippedSkills
  if(phase==='fight'&&fight&&skill(fight,id)){const name=SKILLS.find(k=>k.id===id).name;fx.impact(id,name+'!',true);toast(`${name} 발동!`);sound(id==='shock'?'electric':'critical');buzz(25);renderActiveSkills();}
 }
 async function handleV2(cmd,id,b){
- if(['boats','home','storage','skills'].includes(cmd)){openPanel(cmd);return true;}
+ if(['boats','home','storage','skills','equipment'].includes(cmd)){openPanel(cmd);return true;}
  if(cmd==='town-confirm'){if(fight)state.hp=Math.max(0,fight.hero);save();view='town';resetIdle();close();return true;}
  if(cmd==='resume-fishing'){close();return true;}
+ if(cmd.startsWith('equipment-')){if(phase!=='idle'){toast('낚시를 마치고 장비를 바꿔 주세요.');return true;}const [slot,tier]=id.split(':');const ok=changeEquipment(state,cmd.slice(10),slot,Number(tier));toast(ok?'장비 변경을 완료했어요.':'금화·레벨·보유 장비와 외상을 확인해 주세요.');if(ok){sound('catch');save();}openPanel(panel==='shop'?'shop':'equipment');const section=body.querySelector('[data-equipment-slot="'+slot+'"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}return true;}
  const ops=['v2-upgrade','tackle-buy','boat-buy','boat-select','boat-sell-confirm','boat-sell','home-upgrade','sleep','store-fish','withdraw-fish','store-all','withdraw-all','skill-learn','skill-equip','v2-travel','v2-boss','bait-buy','bait-buy50','bait-emergency','skill-reset-confirm','skill-reset'];
  if(!ops.includes(cmd))return false;
  if(phase!=='idle'){toast('진행 중인 낚시를 마치거나 마을로 귀항한 뒤 이용해 주세요.');return true;}

@@ -19,7 +19,7 @@ export function syncEquipment(s){const all=SLOTS.map(x=>ensureEquipment(s)[x.id]
 export const fullyEquipped=s=>SLOTS.every(x=>ensureEquipment(s)[x.id].equipped!==null);
 export function equipmentStats(s){const e=s.equipment||ensureEquipment({...s});const relative=id=>{const x=e[id];return x.equipped===null?0:itemPower(x.equipped,x.owned[x.equipped])/1.8**s.region;};
  const rod=relative('rod'),reel=relative('reel'),hook=relative('hook'),line=relative('line'),float=relative('float');
- return {power:SLOTS.every(x=>e[x.id].equipped!==null)?Math.max(.12,.85*rod**.5*reel**.3*hook**.2):0,tension:Math.max(.55,Math.min(1.5,1/Math.max(.1,line)**.22)),biteBonus:Math.min(1.5,Math.max(0,float-1)*.6)};
+ return {power:SLOTS.every(x=>e[x.id].equipped!==null)?Math.max(.12,.85*rod**.5*reel**.3*hook**.2):0,tension:Math.max(.55,Math.min(1.5,1/Math.max(.1,line)**.22)),biteBonus:e.float.equipped===null?0:Math.min(1.5,.5*Math.sqrt(float))};
 }
 export function changeEquipment(s,action,slot,tier){
  if(!SLOTS.some(x=>x.id===slot)||!Number.isInteger(tier)||!TACKLE[tier])return false;

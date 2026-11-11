@@ -3,8 +3,8 @@ import {gameTime,activityWeight,weightedFish} from './ecology.js';
 import {availableFish,fishPeriod,fishWeight} from './catch-rules.js';
 import {advanceFishTravel} from './fish-travel.js';
 import {FISH,REGIONS} from './data.js';
-import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,xpForLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS} from './progression.js';
-export const VERSION='2.7.1',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
+import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,xpForLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS,boatPerks} from './progression.js';
+export const VERSION='2.8.0',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const STARTER=()=>({schema:3,coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'basic',pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:['strike','elastic','shock'],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='basic'?30:0])),home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
@@ -76,7 +76,7 @@ export function fightPlan(s,f,g=1,quality=1){
  const limit=Math.ceil(base*phases*(s.region===0?2.4:1.75)/1.06);
  return {base,gearFactor,expected,limit:s.caught<3?Math.max(120,limit):limit};
 }
-export function makeFight(s,f,g,castQuality=1){const plan=fightPlan(s,f,g,castQuality);return {fish:f,grade:g,hp:100,hero:s.hp,heroMax:maxHP(s),tension:0,elapsed:0,timeLimit:plan.limit,expectedSeconds:plan.expected,strokeLeft:0,lastInput:0,criticalCycle:-1,direction:Math.random()<.5?-1:1,nextTurn:2.8,skill:.3,burst:0,phase:1,legendary:Boolean(f.legendary),castQuality,damageRate:100/plan.base,gearFactor:plan.gearFactor,tensionFactor:equipmentStats(s).tension,skills:{...s.skills},equipped:[...s.equippedSkills],cooldowns:{},effects:{elastic:0,shock:0,grit:0,slow:0},shockDps:0,protected:s.caught<3,overload:0,done:null};}
+export function makeFight(s,f,g,castQuality=1){const plan=fightPlan(s,f,g,castQuality);return {fish:f,grade:g,hp:100,hero:s.hp,heroMax:maxHP(s),tension:0,elapsed:0,timeLimit:plan.limit,expectedSeconds:plan.expected,strokeLeft:0,lastInput:0,criticalCycle:-1,direction:Math.random()<.5?-1:1,nextTurn:2.8,skill:.3,burst:0,phase:1,legendary:Boolean(f.legendary),castQuality,damageRate:100/plan.base,gearFactor:plan.gearFactor,tensionFactor:equipmentStats(s).tension*(1-boatPerks(s.boat).tension),skills:{...s.skills},equipped:[...s.equippedSkills],cooldowns:{},effects:{elastic:0,shock:0,grit:0,slow:0},shockDps:0,protected:s.caught<3,overload:0,done:null};}
 export function fightStep(f,dt,input,rng=Math.random){if(f.done)return f;dt=clamp(dt,0,.1);f.elapsed+=dt;if(input){f.lastInput=input;f.strokeLeft=.18;}else if(f.strokeLeft>0){f.strokeLeft=Math.max(0,f.strokeLeft-dt);input=f.lastInput;}f.effectiveInput=input;f.burst=Math.max(0,f.burst-dt);for(const k of Object.keys(f.cooldowns))f.cooldowns[k]=Math.max(0,f.cooldowns[k]-dt);for(const k of Object.keys(f.effects))f.effects[k]=Math.max(0,f.effects[k]-dt);if(f.effects.shock>0)f.hp-=f.shockDps*dt;if(f.effects.bleed>0)f.hp-=(12+6*(f.skills.bleed||0))/6*dt;
  f.nextTurn-=dt*(f.effects.slow>0?.45:1);if(f.nextTurn<=0){f.direction=rng()<.5?-1:1;f.nextTurn=(2.2+rng()*2)*({dart:.72,eel:.9,glide:1.3,crawl:1.4,float:1.5,predator:.8}[f.fish.motion]||1)/(f.legendary?1+(f.phase-1)*.18:1);if(f.fish.boss&&f.effects.slow<=0&&rng()<.4)f.burst=1.2;}
  advanceFishTravel(f,dt);
@@ -102,4 +102,4 @@ export function critical(f){const cycle=Math.floor(f.elapsed/7),p=f.elapsed%7;if
 
 function resolveCatch(f){if(f.legendary&&f.phase<3){f.phase++;f.hp=100;f.tension=Math.min(f.tension,40);f.effects={};f.burst=1.2;f.nextTurn=.8;}else{f.hp=0;f.done='caught';}}
 export function resetSkills(s){s.skills={};s.hp=Math.min(s.hp,maxHP(s));return true;}
-export const waitSeconds=(s,base=8.5)=>base*(1-(s.skills.lure||0)*.04)*(s.bait==='spinner'?.75:1);
+export const waitSeconds=(s,base=8.5)=>base*(1-(s.skills.lure||0)*.04)*(s.bait==='spinner'?.75:1)*(1-boatPerks(s.boat).wait);

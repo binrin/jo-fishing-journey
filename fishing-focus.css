@@ -98,3 +98,9 @@
   #game#game:not(.town-view)>.instruction{line-height:20px;font-size:11px}
  }
 }
+
+/* v2.8 item effect text */
+.equipment-card .gear-effect{color:#2f6b4f;font-weight:700}
+.equipment-card .gear-effect span{color:#8a7a60;font-weight:400}
+.equipment-section .slot-effect{font-size:12px;color:#5d4a32;background:#fff7e3;border-radius:8px;padding:6px 9px;margin:8px 0 0}
+.boat-card .boat-perk{display:inline-block;margin-top:4px;color:#2f6b4f;font-weight:700}

@@ -31,7 +31,14 @@ export const SKILLS=[
 ];
 export const BAITS=[{id:'basic',name:'기본 미끼',factor:1,description:'이 지역의 일반 어종을 만나요.'},{id:'golden',name:'황금 미끼',factor:1.5,description:'맞는 낮·밤에 관상어 입질 확률 4%, 60번째 입질 보장.'},{id:'chain',name:'먹이사슬 채비',factor:1.2,description:'보관한 먹잇감 한 마리를 사용하면 해당 어종의 대형을 노려요.'}];
 extendProgression(BOATS,TACKLE,HOMES,SKILLS,BAITS,STAGE_BUDGETS,TARGET_CATCHES);
+// v2.8: boats now speed up bites and ease line tension, so boat and tackle prices are scaled
+// to keep the normal-profile journey at ~350h (measured with tools/simulate_expansion.mjs).
+export const PRICE_SCALE=1.1;
+for(const b of BOATS){b.price=Math.round(b.price*PRICE_SCALE);b.resale=Math.round(b.resale*PRICE_SCALE);}
+for(const t of TACKLE){t.price=Math.round(t.price*PRICE_SCALE);t.total=Math.round(t.total*PRICE_SCALE);t.upgrades=t.upgrades.map(x=>Math.round(x*PRICE_SCALE));}
 export {REGION_LEVELS};
+// Boat fishing perks scale gently with hull tier (balanced in tools/simulate_expansion.mjs).
+export const boatPerks=id=>{const t=Math.max(0,Math.min(24,Number(id)||0))+1;return {wait:+(t*.008).toFixed(3),tension:+(t*.005).toFixed(3)};};
 export const boatForRegion=id=>BOATS.find(b=>b.region>=id);
 export const gearRequiredLevel=(tier,rank)=>Math.min(100,TACKLE[tier].level+rank);
 export const MAX_LEVEL=100;

@@ -6,7 +6,8 @@ import {FISH,REGIONS} from './data.js';
 import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,gearPrice,upgradeGear,gate,travel,finish,chooseFish,fishGrade,addCatch,sell,validateSave,chargeBait,makeFight,fightStep,skill,critical,spend,maxHP,buyBait,emergencyBait,buyTackle,buyBoat,selectBoat,sellBoat,sleep,upgradeHome,transferFish,learnSkill,equipSkill,legendReady,resetSkills,waitSeconds,fightPlan} from './engine.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,MAX_LEVEL,playerLevel,xpForLevel,availableSP} from './progression.js';
 import {panelContent,boatArt} from './panels.js';
-import {sprite,fishStyle,waterStyle} from './art.js';
+import {sprite,fishStyle,waterStyle,waterVars} from './art.js';
+import {skillIcon} from './skill-icons.js';
 import {createReelFeedback} from './reel-feedback.js';
 import {createReelInput} from './touch-reel.js';
 const reelInput=createReelInput();
@@ -41,7 +42,7 @@ $('closeModal').onclick=close;modal.addEventListener('cancel',()=>{panel='';rele
 function render(){
  const lvl=playerLevel(state);$('headerProgress').textContent=`Lv.${lvl} · ${lvl>=MAX_LEVEL?'MAX':`EXP ${fmt(state.xp-xpForLevel(lvl))} / ${fmt(xpForLevel(lvl+1)-xpForLevel(lvl))}`}`;$('game').classList.toggle('town-view',view==='town');$('playerBadge').textContent=`Lv.${lvl} · ${lvl>=95?'전설에 도전하는 낚시꾼':lvl>=70?'대양의 명인':lvl>=50?'신비의 바다 탐험가':lvl>=25?'바다의 숙련자':'성장하는 낚시꾼'}`;$('townHP').textContent=`체력 ${Math.ceil(state.hp)} / ${maxHP(state)}`;$('xpBar').style.width=`${lvl>=MAX_LEVEL?100:(state.xp-xpForLevel(lvl))/(xpForLevel(lvl+1)-xpForLevel(lvl))*100}%`;$('mapSP').textContent=`스킬 포인트 ${availableSP(state)} SP`;$('mapHome').textContent=`${HOMES[state.home].name} · 잠자기`;$('mapBoat').textContent=`${BOATS[state.boat].name} · ${capacity(state)}칸`;
 
- const r=region(state),night=isNight(state);$('coins').textContent=fmt(state.coins);$('bagCount').textContent=`${state.bag.length} / ${capacity(state)}`;$('debt').hidden=!state.debt;$('debt').textContent=`미끼 외상 ${fmt(state.debt)}`;$('location').textContent=r.display||r.name;$('chapter').textContent=`CHAPTER ${String(state.region+1).padStart(2,'0')} / ${REGIONS.length}`;$('scene').style.cssText=waterStyle(state.region);$('scene').classList.toggle('night',night);$('clockBtn').textContent=`${night?'☾':'☀'} ${gameTime(state).label} ${gameTime(state).name}`;$('scene').dataset.period=PERIODS[gameTime(state).period].id;
+ const r=region(state),night=isNight(state);$('coins').textContent=fmt(state.coins);$('bagCount').textContent=`${state.bag.length} / ${capacity(state)}`;$('debt').hidden=!state.debt;$('debt').textContent=`미끼 외상 ${fmt(state.debt)}`;$('location').textContent=r.display||r.name;$('chapter').textContent=`CHAPTER ${String(state.region+1).padStart(2,'0')} / ${REGIONS.length}`;$('scene').style.cssText=waterVars(state.region);$('scene').classList.toggle('night',night);$('clockBtn').textContent=`${night?'☾':'☀'} ${gameTime(state).label} ${gameTime(state).name}`;$('scene').dataset.period=PERIODS[gameTime(state).period].id;
  $('sellDot').hidden=!state.bag.length;$('baitText').textContent=BAITS.find(b=>b.id===state.bait).name;
  $('bossBtn').firstElementChild.textContent=r.bossId==null?'✦ 지역 의뢰':state.bosses.includes(r.bossId)?'✦ 보스 완료':'✦ 보스 도전';$('bossHint').textContent=r.bossId==null?`${state.counts[state.region]} / ${r.minimum_catches}마리`:FISH[r.bossId].name;
  $('questChip').textContent=state.ended?'전설의 여행 완료 · 이제 자유롭게 낚시해요':`Lv.${lvl} · 장비 ${state.tackle+1}등급 +${state.tackleUpgrade} · ${state.counts[state.region]}/${r.minimum_catches}마리`;
@@ -175,7 +176,7 @@ function goTown(){
 }
 function renderActiveSkills(){
  [0,1,2].forEach(i=>{const id=state.equippedSkills[i],k=SKILLS.find(k=>k.id===id),n=state.skills[id]||0,b=$('active'+i),cool=fight?.cooldowns[id]||0,cost=({strike:.6,slow:.8,surge:.7,cool:.5,bleed:.8,renewal:.8}[id]||1);
- b.firstElementChild.textContent=k.name;b.lastElementChild.textContent=!n?'미습득':phase==='bite'&&id==='strike'?'지금 챔질!':cool>0?`${Math.ceil(cool)}초`:fight?`MP ${Math.round(fight.skill*100)} / ${cost*100}`:`Lv.${n}`;
+ if(b.dataset.skill!==id){b.dataset.skill=id;b.querySelector('.skill-icon')?.remove();b.insertAdjacentHTML('afterbegin',skillIcon(id));}b.classList.toggle('unlearned',!n);b.style.setProperty('--cool',k&&cool>0?Math.min(1,cool/(({strike:18,elastic:24,shock:22,heal:25,slow:24,grit:28,surge:20,cool:16,bleed:22,renewal:22,execute:30})[id]||20)):0);b.setAttribute('aria-label',k.name);b.querySelector('b').textContent=k.name;b.querySelector('small').textContent=!n?'미습득':phase==='bite'&&id==='strike'?'지금 챔질!':cool>0?`${Math.ceil(cool)}초`:fight?`MP ${Math.round(fight.skill*100)} / ${cost*100}`:`Lv.${n}`;
  b.disabled=!n||paused||!(phase==='bite'&&id==='strike'||phase==='fight'&&cool<=0&&(fight?.skill||0)+1e-6>=cost);b.classList.toggle('effect-on',Boolean(fight?.effects[id]>0));
  });
 }

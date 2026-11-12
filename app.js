@@ -3,7 +3,7 @@ import {gameTime,PERIODS,waitUntil,activityWeight,scheduleLabel,ecology} from '.
 import {castTargets,castResult,fishPeriod,weightLabel} from './catch-rules.js';
 import {castLanding} from './water-layout.js';
 import {FISH,REGIONS} from './data.js';
-import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,gearPrice,upgradeGear,gate,travel,finish,chooseFish,fishGrade,addCatch,sell,validateSave,chargeBait,makeFight,fightStep,skill,SKILL_COOLDOWN,critical,spend,maxHP,buyBait,emergencyBait,buyTackle,buyBoat,selectBoat,sellBoat,sleep,upgradeHome,transferFish,learnSkill,equipSkill,legendReady,resetSkills,waitSeconds,fightPlan} from './engine.js';
+import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,gearPrice,upgradeGear,gate,travel,finish,chooseFish,fishGrade,addCatch,sell,validateSave,chargeBait,makeFight,fightStep,tapStrike,TAP_COMBO_MAX,skill,SKILL_COOLDOWN,critical,spend,maxHP,buyBait,emergencyBait,buyTackle,buyBoat,selectBoat,sellBoat,sleep,upgradeHome,transferFish,learnSkill,equipSkill,legendReady,resetSkills,waitSeconds,fightPlan} from './engine.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,MAX_LEVEL,playerLevel,xpForLevel,availableSP} from './progression.js';
 import {panelContent,boatArt} from './panels.js';
 import {sprite,fishStyle,waterStyle,waterVars} from './art.js';
@@ -102,7 +102,7 @@ water.addEventListener('pointerdown',e=>{
  if(e.target.closest('button')||modal.open||paused||view!=='fish')return;e.preventDefault();
  if(phase!=='fight'){action();if(phase!=='fight'||!fight)return;fx.update(fight,performance.now()/1000);}
  const r=water.getBoundingClientRect();reelInput.waterDown(e.pointerId,e.clientX,r.left,r.width);input=reelInput.input;try{water.setPointerCapture(e.pointerId);}catch{}
- if(input===-fight.direction){fx.impact('hit','탁!',true);sound('hit');hitClock=0;}else fx.impact('miss',fight.direction>0?'◀ 왼쪽을 터치!':'오른쪽을 터치! ▶',true);syncReel();
+ if(input===-fight.direction){tapStrike(fight,input);const c=fight.combo||1;fx.impact(c>=TAP_COMBO_MAX?'combo-max':c>=5?'combo':'hit',c>1?`탁! ×${c}`:'탁!',true);sound('hit');hitClock=0;}else{fight.combo=0;fx.impact('miss',fight.direction>0?'◀ 왼쪽을 터치!':'오른쪽을 터치! ▶',true);}syncReel();
 });
 water.addEventListener('pointermove',e=>{if(phase!=='fight')return;const r=water.getBoundingClientRect();reelInput.waterMove(e.pointerId,e.clientX,r.left,r.width);input=reelInput.input;});
 

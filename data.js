@@ -1,4 +1,5 @@
 import {EXTRA_REGIONS,EXTRA_FISH} from './expansion-data.js';
+import {applyHabitatCleanup} from './fish-additions.js';
 // Static resource data for 조선생의 낚시여행.
 // Sources: analysis/original-fish-data.json, native/fish-prices-hp.json,
 // native/items-static.json and balance-model.json. No runtime APK execution.
@@ -4828,3 +4829,4 @@ const motionMap={steady:'cruise',dart:'dart',zigzag:'eel',pulse:'float',dive:'gl
 for(const f of EXTRA_FISH)f.motion=motionMap[f.motionPattern]||(f.boss?'predator':'cruise');
 
 for(const f of EXTRA_FISH)if(!f.legendary)f.spriteSheet=f.spriteSheet.replace(".png","-transparent.png");
+applyHabitatCleanup(FISH,REGIONS);

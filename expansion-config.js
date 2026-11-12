@@ -21,19 +21,13 @@ export function extendProgression(boats,tackle,homes,skills,baits,budgets,target
  ['lore','어류학','passive',30,'단계마다 포획 경험치 +5%.'],
  ['lure','입질 유도','passive',40,'단계마다 입질 대기시간 −4%.'],
  ['recovery','바다 체력','passive',50,'단계마다 최대 체력 +5.'],
- ['reserve','기운 순환','passive',60,'단계마다 당길 때 MP 회복 속도 +5%.'],
- ['surge','급류 당기기','active',45,'6초간 기본 당김 피해 +30/60/90%. MP 70% · 재사용 20초.'],
- ['cool','줄 풀기','active',55,'줄 긴장을 즉시 20/30/40 낮춰요. MP 50% · 재사용 16초.'],
- ['bleed','깊은 바늘','active',65,'6초간 물고기 체력 총 18/24/30% 감소. MP 80% · 재사용 22초.'],
- ['renewal','물결 호흡','active',75,'체력 20/30/40 회복, 줄 긴장 15 감소. MP 80% · 재사용 22초.'],
- ['execute','전설의 챔질','active',90,'체력 30% 미만 물고기에 20/30/40%, 그 외 8/12/16% 피해. MP 100% · 재사용 30초.']
+ ['reserve','기운 순환','passive',60,'단계마다 액티브 스킬 재사용 대기 −4%.'],
+ ['surge','급류 당기기','active',45,'6초간 기본 당김 피해 +30/60/90%. 재사용 20초.'],
+ ['cool','줄 풀기','active',55,'줄 긴장을 즉시 20/30/40 낮춰요. 재사용 16초.'],
+ ['bleed','깊은 바늘','active',65,'6초간 물고기 체력 총 9/12/15% 감소. 재사용 22초.'],
+ ['renewal','물결 호흡','active',75,'체력 20/30/40 회복, 줄 긴장 15 감소. 재사용 22초.'],
+ ['execute','전설의 챔질','active',90,'체력 30% 미만 물고기에 12/18/24%, 그 외 4/6/8% 피해. 재사용 30초.']
  ];
  for(const [id,name,type,level,description] of extra)skills.push({id,name,type,level,description,max:3,costs:[2,4,6]});
- baits.push(
-  {id:'shrimp',name:'통새우 미끼',factor:1.3,level:10,description:'일반 어종 중 대형이 가능한 물고기의 대형 확률 50%.'},
-  {id:'glow',name:'야광 크릴',factor:1.7,level:25,description:'밤에 관상어 확률 8%, 30번째 보장. 낮에는 일반 미끼 효과.'},
-  {id:'spinner',name:'은빛 스피너',factor:1.6,level:40,description:'입질 대기시간 25% 단축.'},
-  {id:'squid',name:'대왕 오징어 미끼',factor:1.8,level:60,description:'전투 기본 당김 피해 15% 증가.'},
-  {id:'pearl',name:'별빛 진주 미끼',factor:2.4,level:80,description:'관상어 확률 10%, 20번째 보장. 포획 경험치 20% 증가.'}
- );
+ // v3.0: baits are families x grades in progression.js
 }

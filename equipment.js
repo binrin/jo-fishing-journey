@@ -1,4 +1,5 @@
 import {TACKLE,playerLevel,gearRequiredLevel} from './progression.js';
+import {repPrice} from './systems.js';
 export const SLOTS=[{id:'rod',name:'낚싯대',share:.35,stat:'당기는 힘'},{id:'reel',name:'릴',share:.22,stat:'감기 효율'},{id:'float',name:'찌',share:.16,stat:'챔질 여유'},{id:'line',name:'줄',share:.17,stat:'긴장 억제'},{id:'hook',name:'바늘',share:.10,stat:'관통력'}];
 export const equipmentName=(slot,tier)=>TACKLE[tier].name.replace(/ 세트$/,'')+' '+SLOTS.find(x=>x.id===slot).name;
 export const itemPower=(tier,rank=0)=>1.8**tier*(1+rank*.1);
@@ -29,7 +30,7 @@ export function changeEquipment(s,action,slot,tier){
  else if(action==='buy'||action==='enhance'){
   if(action==='buy'&&(rank!==undefined||tier>0&&x.owned[tier-1]!==5||level<TACKLE[tier].level))return false;
   if(action==='enhance'&&(rank===undefined||rank>=5||level<gearRequiredLevel(tier,rank+1)))return false;
-  const price=itemPrice(slot,tier,action==='buy'?null:rank);if(s.debt>0||s.coins<price)return false;s.coins-=price;s.stats.spent+=price;x.owned[tier]=action==='buy'?0:rank+1;
+  const price=repPrice(s,itemPrice(slot,tier,action==='buy'?null:rank));if(s.debt>0||s.coins<price)return false;s.coins-=price;s.stats.spent+=price;x.owned[tier]=action==='buy'?0:rank+1;
  }else return false;
  syncEquipment(s);return true;
 }

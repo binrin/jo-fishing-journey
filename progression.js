@@ -22,18 +22,39 @@ export const SKILLS=[
  {id:'vitality',name:'체력',type:'passive',max:5,level:2,costs:[1,1,2,2,3],description:'단계마다 최대 체력 +15. 잠자기로 새 최대치까지 회복해요.'},
  {id:'knot',name:'줄매듭',type:'passive',max:5,level:5,costs:[1,1,2,2,3],description:'단계마다 줄 긴장 증가량 −5%.'},
  {id:'focus',name:'집중',type:'passive',max:5,level:5,costs:[1,1,2,2,3],description:'단계마다 챔질 시간 +0.2초, 타이밍 공격 피해 +0.7%p.'},
- {id:'strike',name:'강타',type:'active',max:3,level:2,costs:[1,3,6],description:'입질 때 확실한 챔질. 전투 중에는 즉시 체력 12/17/22% 감소. MP 60% · 재사용 18초.'},
- {id:'elastic',name:'탄력',type:'active',max:3,level:7,costs:[1,3,6],description:'6/8/10초 동안 줄 긴장이 오르지 않아요. MP 100% · 재사용 24초.'},
- {id:'shock',name:'충격',type:'active',max:3,level:10,costs:[1,3,6],description:'전기 충격으로 5초 동안 물고기 체력 총 20/27/34% 감소. MP 100% · 재사용 22초.'},
- {id:'heal',name:'회복',type:'active',max:3,level:12,costs:[1,3,6],description:'내 체력을 30/40/50 회복해요. MP 100% · 재사용 25초.'},
- {id:'slow',name:'피로',type:'active',max:3,level:15,costs:[1,3,6],description:'6/8/10초 동안 방향 전환과 돌진을 늦춰요. MP 80% · 재사용 24초.'},
- {id:'grit',name:'근성',type:'active',max:3,level:20,costs:[1,3,6],description:'6/8/10초 동안 내 체력 피해를 막아요. MP 100% · 재사용 28초.'}
+ {id:'strike',name:'강타',type:'active',max:3,level:2,costs:[1,3,6],description:'물고기를 건 뒤 사용. 즉시 물고기 체력 6/9/12% 감소. 재사용 18초.'},
+ {id:'elastic',name:'탄력',type:'active',max:3,level:7,costs:[1,3,6],description:'6/8/10초 동안 줄 긴장이 오르지 않아요. 재사용 24초.'},
+ {id:'shock',name:'충격',type:'active',max:3,level:10,costs:[1,3,6],description:'전기 충격으로 5초 동안 물고기 체력 총 10/14/18% 감소. 재사용 22초.'},
+ {id:'heal',name:'회복',type:'active',max:3,level:12,costs:[1,3,6],description:'내 체력을 30/40/50 회복해요. 재사용 25초.'},
+ {id:'slow',name:'피로',type:'active',max:3,level:15,costs:[1,3,6],description:'6/8/10초 동안 방향 전환과 돌진을 늦춰요. 재사용 24초.'},
+ {id:'grit',name:'근성',type:'active',max:3,level:20,costs:[1,3,6],description:'6/8/10초 동안 내 체력 피해를 막아요. 재사용 28초.'}
 ];
-export const BAITS=[{id:'basic',name:'기본 미끼',factor:1,description:'이 지역의 일반 어종을 만나요.'},{id:'golden',name:'황금 미끼',factor:1.5,description:'맞는 낮·밤에 관상어 입질 확률 4%, 60번째 입질 보장.'},{id:'chain',name:'먹이사슬 채비',factor:1.2,description:'보관한 먹잇감 한 마리를 사용하면 해당 어종의 대형을 노려요.'}];
+// v3.0 bait: 5 families matched to fish habits x 4 grades (basic / fine / premium / golden).
+// Higher grades raise the share of big catches; the right family for a species lures it and its trophies.
+export const BAIT_FAMILIES=[
+ {id:'worm',name:'지렁이',icon:'🪱',img:0,level:1,factor:1,fits:'민물 바닥고기 · 붕어·잉어·메기류'},
+ {id:'shrimp',name:'새우',icon:'🦐',img:3,level:5,factor:1.1,fits:'연안·갯바위·산호초의 돔·볼락·우럭류'},
+ {id:'lure',name:'루어',icon:'🎣',img:5,level:10,factor:1.25,fits:'쏘가리·배스·농어 같은 사냥꾼 어종'},
+ {id:'squid',name:'오징어 살',icon:'🦑',img:6,level:20,factor:1.4,fits:'다랑어·방어·상어 같은 먼바다 대형어'},
+ {id:'glow',name:'발광 미끼',icon:'✨',img:4,level:35,factor:1.6,fits:'심해어와 신화의 바다 어종'}
+];
+export const BAIT_TIERS=[
+ {tier:1,prefix:'',level:0,factor:1,grades:[.25,.35,.4],quality:1},
+ {tier:2,prefix:'고급 ',level:12,factor:1.5,grades:[.33,.37,.3],quality:1.03},
+ {tier:3,prefix:'최고급 ',level:35,factor:2.2,grades:[.42,.36,.22],quality:1.06},
+ {tier:4,prefix:'황금 ',level:60,factor:3.2,grades:[.55,.32,.13],quality:1.1}
+];
+export const BAITS=[...BAIT_FAMILIES.flatMap(f=>BAIT_TIERS.map(t=>({id:f.id+t.tier,family:f.id,tier:t.tier,name:t.prefix+f.name,icon:f.icon,img:f.img,level:Math.max(f.level,t.level),factor:+(f.factor*t.factor).toFixed(3),
+ description:`대형 ${Math.round(t.grades[0]*100)}% · 중형 ${Math.round(t.grades[1]*100)}% · 소형 ${Math.round(t.grades[2]*100)}%${t.tier===4?' · 관상어 입질 4%(60번째 보장)':''} · 잘 맞는 어종: ${f.fits}`}))),
+ {id:'chain',family:'chain',tier:0,name:'먹이사슬 채비',icon:'🐟',img:2,level:1,factor:1.2,description:'보관한 먹잇감 한 마리를 사용하면 해당 어종의 대형을 노려요.'}];
+export const LEGACY_BAIT={basic:'worm1',golden:'worm4',shrimp:'shrimp2',glow:'glow2',spinner:'lure3',squid:'squid3',pearl:'glow4',chain:'chain'};
 extendProgression(BOATS,TACKLE,HOMES,SKILLS,BAITS,STAGE_BUDGETS,TARGET_CATCHES);
 // v2.8: boats now speed up bites and ease line tension, so boat and tackle prices are scaled
 // to keep the normal-profile journey at ~350h (measured with tools/simulate_expansion.mjs).
-export const PRICE_SCALE=1.14;
+export const PRICE_SCALE=1.7;
+// v3.0: actives without MP and graded bait speed up fights and raise trophy rates; XP per catch and fish
+// stamina are rescaled so the normal journey stays ~350h (tools/simulate_expansion.mjs).
+export const XP_SCALE=.72,FIGHT_SCALE=2;
 for(const b of BOATS){b.price=Math.round(b.price*PRICE_SCALE);b.resale=Math.round(b.resale*PRICE_SCALE);}
 for(const t of TACKLE){t.price=Math.round(t.price*PRICE_SCALE);t.total=Math.round(t.total*PRICE_SCALE);t.upgrades=t.upgrades.map(x=>Math.round(x*PRICE_SCALE));}
 export {REGION_LEVELS};
@@ -49,7 +70,7 @@ export const xpToNext=l=>l>=MAX_LEVEL?0:Math.round((120+(l+1)*40)*levelMultiplie
 const levelThresholds=[0,0];
 for(let level=2;level<=MAX_LEVEL;level++)levelThresholds[level]=levelThresholds[level-1]+xpToNext(level-1);
 export const xpForLevel=l=>levelThresholds[Math.max(1,Math.min(MAX_LEVEL,Math.floor(l)))];
-export const catchXP=(regionId,fish,grade)=>Math.round((24+(fish.hp[grade]>0?fish.hp[grade]:Math.max(...fish.hp)*1.25)*.10+(fish.id%7)*2)*(1+regionId*.18)*(fish.boss?3:fish.ornamental?1.5:1));
+export const catchXP=(regionId,fish,grade)=>Math.round(XP_SCALE*(24+(fish.hp[grade]>0?fish.hp[grade]:Math.max(...fish.hp)*1.25)*.10+(fish.id%7)*2)*(1+regionId*.18)*(fish.boss?3:fish.ornamental?1.5:1));
 export function playerLevel(s){let level=1;while(level<MAX_LEVEL&&s.xp>=xpForLevel(level+1))level++;return level;}
 // Advanced passive ranks give the new levels meaningful SP choices.
 for(const skill of SKILLS.filter(k=>['strength','vitality','knot','focus'].includes(k.id))){

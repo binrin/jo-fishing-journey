@@ -1,4 +1,5 @@
-import {ensureEquipment,fullyEquipped,changeEquipment,equipmentStats} from './equipment.js';
+import {ensureEquipment,fullyEquipped,changeEquipment,equipmentStats,equipmentName} from './equipment.js';
+import {celebrate} from './celebrate.js';
 import {gameTime,PERIODS,waitUntil,activityWeight,scheduleLabel,ecology} from './ecology.js';
 import {castTargets,castResult,fishPeriod,weightLabel} from './catch-rules.js';
 import {castLanding} from './water-layout.js';
@@ -27,7 +28,7 @@ const modal=$('modal'),body=$('modalBody');
 const fx=createCombatFX({scene:$('scene'),layer:$('combatEffects'),target:$('wildFish'),getState:()=>state});let hitClock=0;
 const reelFeedback=createReelFeedback({sound,vibrate:buzz,cancelVibration:()=>{if(navigator.vibrate)navigator.vibrate(0);}});let dangerState='safe';
 function save(){if(fight)state.hp=Math.max(0,fight.hero);state.savedAt=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch{if(!storageWarning){storageWarning=true;toast('저장 공간이 부족해요. 설정에서 저장 파일을 내보내 주세요.',5000);}}}
-function toast(text,ms=2600){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,ms);}
+function toast(text,ms=2600){clearTimeout(toastTimer);{const t=$('toast'),host=modal.open?modal:document.body;if(t.parentElement!==host)host.append(t);}$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,ms);}
 function sound(type='tap'){if(state.muted)return;try{
  if(['reel-wind','reel-release','line-danger'].includes(type)){
   context??=new (window.AudioContext||window.webkitAudioContext)();if(context.state==='suspended'){context.resume().catch(()=>{});return;}
@@ -146,9 +147,15 @@ function openPanel(name){
  render();
 }
 document.querySelectorAll('[data-panel]').forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));$('settingsBtn').onclick=()=>openPanel('settings');$('bagBtn').onclick=()=>openPanel('storage');$('baitBtn').onclick=()=>{if(phase==='idle')openPanel('bait');else toast('낚시를 마친 뒤 미끼를 바꿀 수 있어요.');};$('bossBtn').onclick=()=>openPanel('goals');$('mealBtn').onclick=()=>{if(phase==='fight'){toast('물고기와 싸우는 중에는 먹을 수 없어요.');return;}openPanel('food');};$('clockBtn').onclick=()=>{if(phase!=='idle'){toast('낚시를 마치고 집에서 쉬어 주세요.');return;}openPanel('time');};
-function performSale(ids,method='normal'){const r=sell(state,ids,method);for(const id of ids)saleSel.delete(id);save();render();if(!r.count)return r;
+function showHaggleResult(xs){const base=xs.reduce((a,f)=>a+f.value,0),rep0=state.rep||0,r=performSale(xs.map(x=>x.uid),'bold',true);if(!r.count){openPanel('market');return;}
+ const o=r.outcome,info={great:['대성공!','×3','💰','haggle-great','상인이 감탄했어요! 세 배 값을 받았어요.'],success:['성공!','×2','🤝','haggle-success','좋은 값에 넘겼어요.'],fail:['실패…','×½','😓','haggle-fail','상인이 고개를 저었어요. 물고기는 반값에 넘겼어요.']}[o];
+ const dRep=Math.round(((state.rep||0)-rep0)*10)/10;
+ show('흥정 결과',`<div class="haggle-result"><span class="haggle-badge ${o}">${info[2]} 흥정 ${info[0]} ${info[1]}</span><p>${info[4]}</p><div class="haggle-rows"><span>물고기</span><b>${r.count}마리</b><span>기준가</span><b>${fmt(base)} G</b><span>흥정 배율</span><b>${info[1]}</b>${r.fee?`<span>유지비</span><b>−${fmt(r.fee)} G</b>`:''}<span>평판</span><b>${dRep>=0?'+':''}${dRep} → ${Math.round(state.rep||0)}</b><span class="total">받은 금화</span><b class="total">${fmt(r.net)} G</b></div></div><button class="primary" data-do="market">시장으로 돌아가기</button>`,'haggle-result');
+ celebrate(info[3],{icon:info[2],title:`흥정 ${info[0]}`,sub:`${info[1]} · ${fmt(r.net)} G`});
+ sound(o==='fail'?'fail':o==='great'?'critical':'catch');if(o==='great')setTimeout(()=>sound('critical'),260);buzz(o==='great'?[30,40,30,40,60]:o==='success'?[25,30,25]:60);}
+function performSale(ids,method='normal',quiet=false){const r=sell(state,ids,method);for(const id of ids)saleSel.delete(id);save();render();if(!r.count)return r;
  const msg=r.outcome==='great'?`흥정 대성공! 3배 · ${fmt(r.net)} G`:r.outcome==='success'?`흥정 성공! 2배 · ${fmt(r.net)} G`:r.outcome==='fail'?`흥정 실패… 반값에 넘겼어요 · ${fmt(r.net)} G`:method==='discount'?`${r.count}마리 평판 판매 · ${fmt(r.net)} G · 평판 ${Math.round(state.rep)}`:`${r.count}마리 판매! 유지비 제외 ${fmt(r.net)} G`;
- sound(r.outcome==='fail'?'fail':'catch');toast(msg,3500);return r;}
+ if(quiet)return r;sound(r.outcome==='fail'?'fail':'catch');toast(msg,3500);return r;}
 let saleSel=new Set();
 body.addEventListener('click',async e=>{const b=e.target.closest('[data-do]');if(!b||b.disabled)return;const cmd=b.dataset.do,id=b.dataset.id;
  if(handleV3(cmd,id,b))return;
@@ -201,7 +208,7 @@ function handleV3(cmd,id,b){
  if(cmd==='sel-all'||cmd==='sel-none'||cmd==='sel-cheap'){saleSel=new Set();if(cmd==='sel-all')state.bag.forEach(x=>saleSel.add(x.uid));if(cmd==='sel-cheap'){const sorted=[...state.bag].filter(x=>!x.boss).sort((a,c)=>a.value-c.value);sorted.slice(0,Math.ceil(sorted.length/2)).forEach(x=>saleSel.add(x.uid));}for(const el of body.querySelectorAll('.sale-item'))el.classList.toggle('selected',saleSel.has(el.dataset.id));updateSaleSummary();return true;}
  if(cmd==='sell-sel'){const ids=selectedFish().map(x=>x.uid);if(!ids.length){toast('먼저 판매할 물고기를 선택하세요.');return true;}performSale(ids,id==='discount'?'discount':'normal');openPanel('market');return true;}
  if(cmd==='haggle-confirm'){const xs=selectedFish();if(!xs.length){toast('먼저 판매할 물고기를 선택하세요.');return true;}const hc=haggleChances(state),v=xs.reduce((a,f)=>a+f.value,0);show('흥정할까요?',`<p>선택한 <b>${xs.length}마리</b>(기준가 ${fmt(v)} G)를 한 번에 흥정해요.</p><ul class="checklist"><li>대성공 ${(hc.great*100).toFixed(1)}% · <b>3배</b></li><li>성공 ${(hc.success*100).toFixed(1)}% · <b>2배</b></li><li>실패 ${((1-hc.great-hc.success)*100).toFixed(1)}% · <b>반값</b>에 판매</li></ul><p class="muted">실패해도 물고기를 잃지 않고 반값을 받아요. 행운이 높을수록 성공 확률이 올라가요. 보스 물고기는 정가로 팔아요.</p><button class="primary" data-do="haggle">흥정 시작</button><button class="secondary" data-do="market">돌아가기</button>`,'haggle');return true;}
- if(cmd==='haggle'){const ids=selectedFish().map(x=>x.uid);if(ids.length)performSale(ids,'bold');openPanel('market');return true;}
+ if(cmd==='haggle'){const xs=selectedFish();if(!xs.length){openPanel('market');return true;}showHaggleResult(xs);return true;}
  if(cmd==='restaurant'||cmd==='food'){openPanel(cmd);return true;}
  if(cmd==='food-buy'){if(buyFood(state,id,1,spend)){toast(`${foodInfo(id).name}을(를) 샀어요.`);sound('catch');save();}else toast('금화·레벨·외상을 확인해 주세요.');openPanel(panel==='food'?'food':'restaurant');return true;}
  if(cmd==='food-eat'){if(phase==='fight'){toast('물고기와 싸우는 중에는 먹을 수 없어요.');return true;}const f=foodInfo(id);if(eatFood(state,id,maxHP)){toast(`${f.icon} ${f.name} 냠냠! ${f.desc}`,3500);sound('catch');save();render();}openPanel(panel==='restaurant'?'restaurant':'food');return true;}
@@ -213,24 +220,24 @@ async function handleV2(cmd,id,b){
  if(['boats','home','storage','skills','equipment'].includes(cmd)){openPanel(cmd);return true;}
  if(cmd==='town-confirm'){if(fight)state.hp=Math.max(0,fight.hero);save();view='town';resetIdle();close();return true;}
  if(cmd==='resume-fishing'){close();return true;}
- if(cmd.startsWith('equipment-')){if(phase!=='idle'){toast('낚시를 마치고 장비를 바꿔 주세요.');return true;}const [slot,tier]=id.split(':');const ok=changeEquipment(state,cmd.slice(10),slot,Number(tier));toast(ok?'장비 변경을 완료했어요.':'금화·레벨·보유 장비와 외상을 확인해 주세요.');if(ok){sound('catch');save();}openPanel(panel==='shop'?'shop':'equipment');const section=body.querySelector('[data-equipment-slot="'+slot+'"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}return true;}
+ if(cmd.startsWith('equipment-')){if(phase!=='idle'){toast('낚시를 마치고 장비를 바꿔 주세요.');return true;}const [slot,tier]=id.split(':');const act=cmd.slice(10),ok=changeEquipment(state,act,slot,Number(tier));if(!ok)toast('금화·레벨·보유 장비와 외상을 확인해 주세요.');else if(act!=='enhance'&&act!=='buy')toast('장비 변경을 완료했어요.');if(ok){sound(act==='enhance'?'hit':'catch');save();}openPanel(panel==='shop'?'shop':'equipment');const section=body.querySelector('[data-equipment-slot="'+slot+'"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}if(ok&&(act==='enhance'||act==='buy')){const ic={rod:'🎣',reel:'⚙️',float:'🔴',line:'🧵',hook:'🪝'}[slot]||'✨',nm=equipmentName(slot,Number(tier));if(act==='enhance'){const rk=ensureEquipment(state)[slot].owned[Number(tier)];celebrate('forge',{icon:ic,title:`강화 성공! +${rk}`,sub:nm});setTimeout(()=>sound('critical'),180);buzz([20,30,40]);}else{celebrate('newgear',{icon:ic,title:'새 장비!',sub:nm});buzz([20,40,20]);}}return true;}
  const ops=['v2-upgrade','tackle-buy','boat-buy','boat-select','boat-sell-confirm','boat-sell','home-upgrade','sleep','store-fish','withdraw-fish','store-all','withdraw-all','skill-learn','skill-equip','v2-travel','v2-boss','bait-buy','bait-buy50','bait-emergency','skill-reset-confirm','skill-reset'];
  if(!ops.includes(cmd))return false;
  if(phase!=='idle'){toast('진행 중인 낚시를 마치거나 마을로 귀항한 뒤 이용해 주세요.');return true;}
  const failMsg='금화·레벨·미끼 외상과 필요한 조건을 확인해 주세요.';
  if(cmd==='skill-reset-confirm'){show('스킬을 다시 배분할까요?',`<p>사용한 스킬 포인트를 모두 돌려받아요. 배운 스킬은 초기화되며 금화는 들지 않아요.</p><button class="primary" data-do="skill-reset">포인트 돌려받기</button><button class="secondary" data-do="skills">취소</button>`,'skills');}
  if(cmd==='skill-reset'){resetSkills(state);save();openPanel('skills');}
- if(cmd==='v2-upgrade'){if(upgradeGear(state)){toast(`장비 강화 +${state.tackleUpgrade}!`);sound('catch');}else toast(failMsg);save();openPanel('shop');}
- if(cmd==='tackle-buy'){if(buyTackle(state)){toast('새 장비 세트를 장착했어요. 이전 장비는 정산했어요.');sound('catch');}else toast(failMsg);save();openPanel('shop');}
- if(cmd==='boat-buy'){if(buyBoat(state,Number(id))){selectBoat(state,Number(id));toast(`${BOATS[Number(id)].name} 구매 · 탑승 완료!`);sound('catch');}else toast(failMsg);save();openPanel('boats');}
+ if(cmd==='v2-upgrade'){if(upgradeGear(state)){save();openPanel('shop');celebrate('forge',{icon:'🔨',title:`강화 성공! +${state.tackleUpgrade}`,sub:TACKLE[state.tackle].name});sound('hit');setTimeout(()=>sound('critical'),180);buzz([20,30,40]);}else{toast(failMsg);save();openPanel('shop');}}
+ if(cmd==='tackle-buy'){if(buyTackle(state)){save();openPanel('shop');celebrate('newgear',{icon:'🎣',title:'새 장비 세트!',sub:`${TACKLE[state.tackle].name} 장착 · 이전 장비는 정산했어요`});sound('catch');buzz([20,40,20]);}else{toast(failMsg);save();openPanel('shop');}}
+ if(cmd==='boat-buy'){if(buyBoat(state,Number(id))){selectBoat(state,Number(id));save();openPanel('boats');celebrate('boat',{icon:'⛵',title:'새 배 출항!',sub:`${BOATS[Number(id)].name} 구매 · 탑승 완료`});sound('catch');buzz([20,40,20]);}else{toast(failMsg);save();openPanel('boats');}}
  if(cmd==='boat-select'){if(selectBoat(state,Number(id)))toast(`${BOATS[Number(id)].name}에 탑승했어요.`);else toast('물고기가 배의 수족관 용량보다 많아요. 집에 보관하거나 판매해 주세요.');save();openPanel('boats');}
  if(cmd==='boat-sell-confirm'){const boat=BOATS[Number(id)];show('배를 판매할까요?',`${boatArt(boat.id)}<p><b>${boat.name}</b>을 ${fmt(boat.resale)} G에 판매합니다. 다시 사려면 구매 대금이 필요해요.</p><p class="muted">탑승 중인 배는 다른 소유 배로 갈아탑니다. 물고기를 모두 실을 배가 없으면 판매할 수 없어요.</p><button class="danger-button" data-do="boat-sell" data-id="${boat.id}">이 배 판매하기</button><button class="secondary" data-do="boats">취소</button>`,'boat-confirm');}
  if(cmd==='boat-sell'){if(sellBoat(state,Number(id)))toast('배를 판매했어요.');else toast('다른 배의 저장공간이 부족해요. 물고기를 집으로 옮겨 주세요.');save();openPanel('boats');}
- if(cmd==='home-upgrade'){if(upgradeHome(state)){toast(`${HOMES[state.home].name}으로 이사했어요!`);sound('catch');}else toast(failMsg);save();openPanel('home');}
+ if(cmd==='home-upgrade'){if(upgradeHome(state)){save();openPanel('home');celebrate('home',{icon:'🏠',title:'이사 완료!',sub:`${HOMES[state.home].name}으로 옮겼어요`});sound('catch');buzz([20,40,20]);}else{toast(failMsg);save();openPanel('home');}}
  if(cmd==='sleep'){sleep(state);view='town';paused=false;save();openPanel('home');toast(`푹 잤어요! 체력 ${maxHP(state)} / ${maxHP(state)} · ${isNight(state)?'밤':'낮'}`,4000);}
  if(cmd==='store-fish'||cmd==='withdraw-fish'){if(!transferFish(state,id,cmd==='store-fish'))toast('수족관이 가득 찼어요. 공간을 비워 주세요.');save();openPanel('storage');}
  if(cmd==='store-all'||cmd==='withdraw-all'){const toHome=cmd==='store-all',source=toHome?state.bag:state.homeFish;let count=0;for(const x of [...source])if(transferFish(state,x.uid,toHome))count++;save();toast(`${count}마리를 ${toHome?'집':'배'} 수족관으로 옮겼어요.`);openPanel(panel==='home'?'home':'storage');}
- if(cmd==='skill-learn'){if(learnSkill(state,id)){toast(`${SKILLS.find(k=>k.id===id).name} Lv.${state.skills[id]} 습득!`);sound('catch');}else toast('필요 레벨과 남은 스킬 포인트를 확인해 주세요.');save();openPanel('skills');}
+ if(cmd==='skill-learn'){if(learnSkill(state,id)){save();openPanel('skills');celebrate('skill',{icon:'📜',title:`${SKILLS.find(k=>k.id===id).name} Lv.${state.skills[id]}`,sub:'스킬 습득!'});sound('critical');buzz([15,30,15]);}else{toast('필요 레벨과 남은 스킬 포인트를 확인해 주세요.');save();openPanel('skills');}}
  if(cmd==='skill-equip'){const [skillId,slot]=id.split(':');if(equipSkill(state,skillId,Number(slot)))toast('전투 스킬을 장착했어요.');save();openPanel('skills');}
  if(cmd==='v2-travel'){const target=Number(id);if(state.hp<=0){openPanel('home');toast('먼저 잠을 자고 체력을 회복하세요.');return true;}if(target>state.unlocked)state.region=state.unlocked;if(travel(state,target)){view='fish';paused=false;save();close();resetIdle(`${REGIONS[target].name}에 도착했어요. ${BOATS[state.boat].name}에서 낚시를 시작해요.`);}else{openPanel('goals');toast('배 등급·레벨·이전 낚시터 목표를 확인해 주세요.');}}
  if(cmd==='v2-boss'){view='fish';paused=false;close();start(true);}

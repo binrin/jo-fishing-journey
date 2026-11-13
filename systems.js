@@ -48,7 +48,7 @@ export const baitQuality=s=>(BAIT_TIERS.find(x=>x.tier===baitInfo(s.bait)?.tier)
 export function recommendedBait(s,regionId=s.region){
  const fam=regionProfile(regionId).recommended,lvl=playerLevel(s);
  const owned=BAITS.filter(b=>b.family===fam&&lvl>=b.level).sort((a,b)=>b.tier-a.tier);
- return owned[0]||BAITS.find(b=>b.id==='worm1');
+ return owned.find(b=>s.baitStock[b.id]>0)||owned[0]||BAITS.find(b=>b.id==='worm1');
 }
 
 // ---------- reputation ----------

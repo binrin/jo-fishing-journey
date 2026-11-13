@@ -5,7 +5,7 @@ import {advanceFishTravel} from './fish-travel.js';
 import {FISH,REGIONS} from './data.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,xpForLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS,boatPerks,LEGACY_BAIT,FIGHT_SCALE} from './progression.js';
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff} from './systems.js';
-export const VERSION='3.0.5',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
+export const VERSION='3.0.6',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const STARTER=()=>({schema:3,coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:['strike','elastic','shock'],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
@@ -94,12 +94,12 @@ export function makeFight(s,f,g,castQuality=1){const plan=fightPlan(s,f,g,castQu
 export const TURN_GRACE=.3;
 // Holding the water winds steadily; each correct tap also lands an instant hit, and fast taps build a combo.
 export const HOLD_RATE=.7,TAP_HIT=.07,TAP_COMBO_WINDOW=.45,TAP_COMBO_MAX=10,TAP_COMBO_STEP=.05;
-const pullDamage=f=>f.damageRate*f.gearFactor*f.castQuality*(f.effects.surge>0?1+(f.skills.surge||0)*.3:1);
+const pullDamage=f=>f.damageRate*f.gearFactor*f.castQuality*(f.effects.surge>0?1+(f.skills.surge||0)*.4:1);
 export function tapStrike(f,dir){if(!f||f.done)return 0;if(dir!==-f.direction){f.combo=0;return 0;}
  f.combo=f.elapsed-(f.lastTap??-9)<=TAP_COMBO_WINDOW?Math.min(TAP_COMBO_MAX,(f.combo||0)+1):1;f.lastTap=f.elapsed;
  const dmg=pullDamage(f)*TAP_HIT*(1+TAP_COMBO_STEP*(f.combo-1));f.hp-=dmg;
  if(f.effects.elastic<=0)f.tension=clamp(f.tension+.6*(f.tensionFactor||1),0,100);return dmg;}
-export function fightStep(f,dt,input,rng=Math.random){if(f.done)return f;const dirBefore=f.direction;f.turnGrace=Math.max(0,(f.turnGrace||0)-Math.min(dt,.1));dt=clamp(dt,0,.1);f.elapsed+=dt;if(input){f.lastInput=input;f.strokeLeft=.18;}else if(f.strokeLeft>0){f.strokeLeft=Math.max(0,f.strokeLeft-dt);input=f.lastInput;}f.effectiveInput=input;f.burst=Math.max(0,f.burst-dt);for(const k of Object.keys(f.cooldowns))f.cooldowns[k]=Math.max(0,f.cooldowns[k]-dt);for(const k of Object.keys(f.effects))f.effects[k]=Math.max(0,f.effects[k]-dt);if(f.effects.shock>0)f.hp-=f.shockDps*dt;if(f.effects.bleed>0)f.hp-=(6+3*(f.skills.bleed||0))/6*dt;
+export function fightStep(f,dt,input,rng=Math.random){if(f.done)return f;const dirBefore=f.direction;f.turnGrace=Math.max(0,(f.turnGrace||0)-Math.min(dt,.1));dt=clamp(dt,0,.1);f.elapsed+=dt;if(input){f.lastInput=input;f.strokeLeft=.18;}else if(f.strokeLeft>0){f.strokeLeft=Math.max(0,f.strokeLeft-dt);input=f.lastInput;}f.effectiveInput=input;f.burst=Math.max(0,f.burst-dt);for(const k of Object.keys(f.cooldowns))f.cooldowns[k]=Math.max(0,f.cooldowns[k]-dt);for(const k of Object.keys(f.effects))f.effects[k]=Math.max(0,f.effects[k]-dt);if(f.effects.shock>0)f.hp-=f.shockDps*dt;if(f.effects.bleed>0)f.hp-=(8+4*(f.skills.bleed||0))/6*dt;
  f.nextTurn-=dt*(f.effects.slow>0?.45:1);if(f.nextTurn<=0){f.direction=rng()<.5?-1:1;f.nextTurn=(2.2+rng()*2)*({dart:.72,eel:.9,glide:1.3,crawl:1.4,float:1.5,predator:.8}[f.fish.motion]||1)/(f.legendary?1+(f.phase-1)*.18:1)/((f.might||1)>1?1.15:1);if(f.fish.boss&&f.effects.slow<=0&&rng()<.4)f.burst=1.2;}
  advanceFishTravel(f,dt);
  // Reaction grace: right after a real turn, pulling the old way costs a quarter of the HP.
@@ -110,19 +110,19 @@ export function fightStep(f,dt,input,rng=Math.random){if(f.done)return f;const d
  f.tension=clamp(f.tension,0,100);f.skill=clamp(f.skill,0,1);if(!f.legendary)f.phase=f.fish.boss?(f.hp<33?3:f.hp<66?2:1):1;if(f.tension>=99)f.overload+=dt;else f.overload=0;
  if(f.protected){f.hero=Math.max(25,f.hero);f.tension=Math.min(85,f.tension);f.overload=0;}if(f.hp<=0)resolveCatch(f);else if(f.hero<=0||f.overload>1.15){f.hero=Math.max(0,f.hero);f.done='lost';}if(!f.done&&f.elapsed>=f.timeLimit){f.done='lost';f.failure=f.fish.boss||f.tension>=65?'timeout-line':'timeout-bait';}return f;}
 // v3.0: actives cost no MP - only their cooldown (shortened by the reserve passive).
-export const SKILL_COOLDOWN={strike:18,elastic:24,shock:22,heal:25,slow:24,grit:28,surge:20,cool:16,bleed:22,renewal:22,execute:30};
+export const SKILL_COOLDOWN={strike:14,elastic:21,shock:19,heal:22,slow:21,grit:25,surge:17,cool:14,bleed:19,renewal:20,execute:24};
 export function skill(f,id=f.equipped[0]){const n=f.skills[id]||0;if(!n||!f.equipped.includes(id)||f.done||(f.cooldowns[id]||0)>0)return false;const duration=4+2*n;
- if(id==='strike'){f.hp-=3+3*n;f.cooldowns[id]=18;}
- if(id==='elastic'){f.effects.elastic=duration;f.cooldowns[id]=24;}
- if(id==='shock'){f.effects.shock=5;f.shockDps=(6+4*n)/5;f.cooldowns[id]=22;}
- if(id==='heal'){f.hero=Math.min(f.heroMax,f.hero+20+10*n);f.cooldowns[id]=25;}
- if(id==='slow'){f.effects.slow=duration;f.cooldowns[id]=24;}
- if(id==='grit'){f.effects.grit=duration;f.cooldowns[id]=28;}
- if(id==='surge'){f.effects.surge=6;f.cooldowns[id]=20;}
- if(id==='cool'){f.tension=Math.max(0,f.tension-10-10*n);f.cooldowns[id]=16;}
- if(id==='bleed'){f.effects.bleed=6;f.cooldowns[id]=22;}
- if(id==='renewal'){f.hero=Math.min(f.heroMax,f.hero+10+10*n);f.tension=Math.max(0,f.tension-15);f.cooldowns[id]=22;}
- if(id==='execute'){f.hp-=f.hp<30?6+6*n:2+2*n;f.cooldowns[id]=30;}
+ if(id==='strike'){f.hp-=5+5*n;f.cooldowns[id]=SKILL_COOLDOWN.strike;}
+ if(id==='elastic'){f.effects.elastic=duration;f.cooldowns[id]=SKILL_COOLDOWN.elastic;}
+ if(id==='shock'){f.effects.shock=5;f.shockDps=(8+5*n)/5;f.cooldowns[id]=SKILL_COOLDOWN.shock;}
+ if(id==='heal'){f.hero=Math.min(f.heroMax,f.hero+20+15*n);f.cooldowns[id]=SKILL_COOLDOWN.heal;}
+ if(id==='slow'){f.effects.slow=duration;f.cooldowns[id]=SKILL_COOLDOWN.slow;}
+ if(id==='grit'){f.effects.grit=duration;f.cooldowns[id]=SKILL_COOLDOWN.grit;}
+ if(id==='surge'){f.effects.surge=6;f.cooldowns[id]=SKILL_COOLDOWN.surge;}
+ if(id==='cool'){f.tension=Math.max(0,f.tension-10-15*n);f.cooldowns[id]=SKILL_COOLDOWN.cool;}
+ if(id==='bleed'){f.effects.bleed=6;f.cooldowns[id]=SKILL_COOLDOWN.bleed;}
+ if(id==='renewal'){f.hero=Math.min(f.heroMax,f.hero+10+15*n);f.tension=Math.max(0,f.tension-20);f.cooldowns[id]=SKILL_COOLDOWN.renewal;}
+ if(id==='execute'){f.hp-=f.hp<35?10+10*n:4+4*n;f.cooldowns[id]=SKILL_COOLDOWN.execute;}
  if(f.cooldowns[id])f.cooldowns[id]*=1-(f.skills.reserve||0)*.04;
  if(f.hp<=0)resolveCatch(f);return true;}
 export function critical(f){const cycle=Math.floor(f.elapsed/7),p=f.elapsed%7;if(p<4.8||p>6.4||f.done||f.criticalCycle===cycle)return false;f.criticalCycle=cycle;f.hp=Math.max(0,f.hp-5-(f.skills.focus||0)*.7);if(f.effects.elastic<=0)f.tension=Math.min(100,f.tension+3);if(f.hp===0)resolveCatch(f);return true;}

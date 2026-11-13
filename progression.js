@@ -22,12 +22,12 @@ export const SKILLS=[
  {id:'vitality',name:'체력',type:'passive',max:5,level:2,costs:[1,1,2,2,3],description:'단계마다 최대 체력 +15. 잠자기로 새 최대치까지 회복해요.'},
  {id:'knot',name:'줄매듭',type:'passive',max:5,level:5,costs:[1,1,2,2,3],description:'단계마다 줄 긴장 증가량 −5%.'},
  {id:'focus',name:'집중',type:'passive',max:5,level:5,costs:[1,1,2,2,3],description:'단계마다 챔질 시간 +0.2초, 타이밍 공격 피해 +0.7%p.'},
- {id:'strike',name:'강타',type:'active',max:3,level:2,costs:[1,3,6],description:'물고기를 건 뒤 사용. 즉시 물고기 체력 6/9/12% 감소. 재사용 18초.'},
- {id:'elastic',name:'탄력',type:'active',max:3,level:7,costs:[1,3,6],description:'6/8/10초 동안 줄 긴장이 오르지 않아요. 재사용 24초.'},
- {id:'shock',name:'충격',type:'active',max:3,level:10,costs:[1,3,6],description:'전기 충격으로 5초 동안 물고기 체력 총 10/14/18% 감소. 재사용 22초.'},
- {id:'heal',name:'회복',type:'active',max:3,level:12,costs:[1,3,6],description:'내 체력을 30/40/50 회복해요. 재사용 25초.'},
- {id:'slow',name:'피로',type:'active',max:3,level:15,costs:[1,3,6],description:'6/8/10초 동안 방향 전환과 돌진을 늦춰요. 재사용 24초.'},
- {id:'grit',name:'근성',type:'active',max:3,level:20,costs:[1,3,6],description:'6/8/10초 동안 내 체력 피해를 막아요. 재사용 28초.'}
+ {id:'strike',name:'강타',type:'active',max:3,level:2,costs:[1,3,6],description:'물고기를 건 뒤 사용. 즉시 물고기 체력 10/15/20% 감소. 재사용 14초.'},
+ {id:'elastic',name:'탄력',type:'active',max:3,level:7,costs:[1,3,6],description:'6/8/10초 동안 줄 긴장이 오르지 않아요. 재사용 21초.'},
+ {id:'shock',name:'충격',type:'active',max:3,level:10,costs:[1,3,6],description:'전기 충격으로 5초 동안 물고기 체력 총 13/18/23% 감소. 재사용 19초.'},
+ {id:'heal',name:'회복',type:'active',max:3,level:12,costs:[1,3,6],description:'내 체력을 35/50/65 회복해요. 재사용 22초.'},
+ {id:'slow',name:'피로',type:'active',max:3,level:15,costs:[1,3,6],description:'6/8/10초 동안 방향 전환과 돌진을 늦춰요. 재사용 21초.'},
+ {id:'grit',name:'근성',type:'active',max:3,level:20,costs:[1,3,6],description:'6/8/10초 동안 내 체력 피해를 막아요. 재사용 25초.'}
 ];
 // v3.0 bait: 5 families matched to fish habits x 4 grades (basic / fine / premium / golden).
 // Higher grades raise the share of big catches; the right family for a species lures it and its trophies.
@@ -51,10 +51,10 @@ export const LEGACY_BAIT={basic:'worm1',golden:'worm4',shrimp:'shrimp2',glow:'gl
 extendProgression(BOATS,TACKLE,HOMES,SKILLS,BAITS,STAGE_BUDGETS,TARGET_CATCHES);
 // v2.8: boats now speed up bites and ease line tension, so boat and tackle prices are scaled
 // to keep the normal-profile journey at ~350h (measured with tools/simulate_expansion.mjs).
-export const PRICE_SCALE=1.7;
+export const PRICE_SCALE=2;
 // v3.0: actives without MP and graded bait speed up fights and raise trophy rates; XP per catch and fish
 // stamina are rescaled so the normal journey stays ~350h (tools/simulate_expansion.mjs).
-export const XP_SCALE=.72,FIGHT_SCALE=2;
+export const XP_SCALE=.61,FIGHT_SCALE=2;
 for(const b of BOATS){b.price=Math.round(b.price*PRICE_SCALE);b.resale=Math.round(b.resale*PRICE_SCALE);}
 for(const t of TACKLE){t.price=Math.round(t.price*PRICE_SCALE);t.total=Math.round(t.total*PRICE_SCALE);t.upgrades=t.upgrades.map(x=>Math.round(x*PRICE_SCALE));}
 export {REGION_LEVELS};

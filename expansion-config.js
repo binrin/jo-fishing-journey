@@ -22,11 +22,11 @@ export function extendProgression(boats,tackle,homes,skills,baits,budgets,target
  ['lure','입질 유도','passive',40,'단계마다 입질 대기시간 −4%.'],
  ['recovery','바다 체력','passive',50,'단계마다 최대 체력 +5.'],
  ['reserve','기운 순환','passive',60,'단계마다 액티브 스킬 재사용 대기 −4%.'],
- ['surge','급류 당기기','active',45,'6초간 기본 당김 피해 +30/60/90%. 재사용 20초.'],
- ['cool','줄 풀기','active',55,'줄 긴장을 즉시 20/30/40 낮춰요. 재사용 16초.'],
- ['bleed','깊은 바늘','active',65,'6초간 물고기 체력 총 9/12/15% 감소. 재사용 22초.'],
- ['renewal','물결 호흡','active',75,'체력 20/30/40 회복, 줄 긴장 15 감소. 재사용 22초.'],
- ['execute','전설의 챔질','active',90,'체력 30% 미만 물고기에 12/18/24%, 그 외 4/6/8% 피해. 재사용 30초.']
+ ['surge','급류 당기기','active',45,'6초간 기본 당김 피해 +40/80/120%. 재사용 17초.'],
+ ['cool','줄 풀기','active',55,'줄 긴장을 즉시 25/40/55 낮춰요. 재사용 14초.'],
+ ['bleed','깊은 바늘','active',65,'6초간 물고기 체력 총 12/16/20% 감소. 재사용 19초.'],
+ ['renewal','물결 호흡','active',75,'체력 25/40/55 회복, 줄 긴장 20 감소. 재사용 20초.'],
+ ['execute','전설의 챔질','active',90,'체력 35% 미만 물고기에 20/30/40%, 그 외 8/12/16% 피해. 재사용 24초.']
  ];
  for(const [id,name,type,level,description] of extra)skills.push({id,name,type,level,description,max:3,costs:[2,4,6]});
  // v3.0: baits are families x grades in progression.js

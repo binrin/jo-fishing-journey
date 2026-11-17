@@ -14,7 +14,7 @@
 <button class="map-spot departure" style="left:50%;top:86%" data-town="map"><span>낚시 지도 · 출항</span><small id="mapBoat">조각배 · 20칸</small></button>
 <p class="map-hint">© 2026 체니 · 건물을 터치해 들어가세요</p></section>
  <section id="scene" class="scene" aria-label="낚시터">
-  <div class="night-shade"></div><div class="scene-top"><div class="location"><small id="chapter">첫 번째 여행</small><b id="location">솔바람 개울</b></div><div class="scene-chips"><button id="clockBtn" class="weather">☀ 낮 · 산들바람</button><button id="mealBtn" class="meal-chip" aria-label="도시락 가방">🍙 식사</button></div></div>
+  <div class="night-shade"></div><div class="scene-top"><div class="location"><small id="chapter">첫 번째 여행</small><b id="location">솔바람 개울</b></div><div class="scene-chips"><button id="clockBtn" class="weather">☀ 낮 · 산들바람</button><button id="mealBtn" class="meal-chip" aria-label="도시락 가방">🍙 식사</button><button id="autoBtn" class="meal-chip auto-chip" aria-label="자동 낚시">🤖 자동</button></div></div>
   <div id="questChip" class="quest-chip">첫 물고기를 만나 볼까요?</div>
   <div class="ripples r1"></div><div class="ripples r2"></div><div id="bobber" class="bobber"><img src="assets/float.svg" alt="빨간 찌톱과 나무 몸통의 낚시찌" draggable="false"></div>
   <img class="hero" src="assets/hero-rear.png" alt="등을 보이고 앉아 수면을 바라보는 조선생" draggable="false">
@@ -25,7 +25,7 @@
   <div id="tensionAlert" role="alert" aria-atomic="true"><strong id="tensionAlertTitle">줄이 팽팽해요</strong><span>손을 떼면 줄이 풀려요</span></div>
   <div id="combatEffects" class="combat-effects" aria-hidden="true"></div>
   <div id="sceneMessage" class="scene-message">물결 너머, 새로운 여행이 시작돼요.</div>
-  <button id="pauseOverlay" class="pause-overlay" hidden><b>잠깐 쉬는 중</b><span>눌러서 이어하기</span></button>
+  <div id="autoOverlay" class="auto-overlay" hidden></div><button id="pauseOverlay" class="pause-overlay" hidden><b>잠깐 쉬는 중</b><span>눌러서 이어하기</span></button>
  </section>
  <div class="journey-row"><button id="baitBtn"><span id="baitText">🪱 기본 미끼</span><small>변경 ›</small></button><button id="bossBtn"><span>✦ 지역 의뢰</span><small id="bossHint">성장 목표</small></button></div>
  <section class="instruments"><div class="meter-row"><label>내 체력 <b id="heroValue">100</b><span class="bar"><i id="heroBar"></i></span></label><label>물고기 <b id="fishValue">—</b><span class="bar fish-bar"><i id="fishBar"></i></span></label></div><div class="tension"><span>줄 긴장</span><div class="bar"><i id="tensionBar"></i><span class="danger-mark"></span></div><b id="tensionValue">0%</b></div></section>

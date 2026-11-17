@@ -72,26 +72,36 @@ export const HAGGLE_MULT={great:3,success:2,fail:.5};
 
 // ---------- food ----------
 // heal: instant HP (Infinity = full). Buffs last `min` minutes of fishing play time; one meal at a time.
+// Food heals over time (heal over regen seconds of play) and some give a buff for `min` minutes.
 export const FOODS=[
- {id:'riceball',name:'주먹밥',icon:'🍙',level:1,cost:6,heal:30,min:0,buff:{},desc:'체력 30 회복'},
- {id:'gimbap',name:'김밥',icon:'🍱',level:4,cost:10,heal:60,min:10,buff:{wait:.05},desc:'체력 60 회복 · 입질 대기 −5%'},
- {id:'fishcake',name:'어묵탕',icon:'🍢',level:8,cost:14,heal:50,min:15,buff:{maxHp:15},desc:'체력 50 회복 · 최대 체력 +15'},
- {id:'ramen',name:'라면',icon:'🍜',level:12,cost:18,heal:30,min:15,buff:{power:.05},desc:'당기는 힘 +5%'},
- {id:'tteokbokki',name:'떡볶이',icon:'🌶️',level:18,cost:22,heal:30,min:15,buff:{tension:.08},desc:'줄 긴장 증가 −8%'},
- {id:'maeuntang',name:'매운탕',icon:'🍲',level:25,cost:30,heal:Infinity,min:20,buff:{power:.06},desc:'체력 전부 회복 · 당기는 힘 +6%'},
- {id:'eel',name:'장어구이',icon:'🍖',level:32,cost:40,heal:40,min:20,buff:{power:.1},desc:'당기는 힘 +10%'},
- {id:'hoedeop',name:'회덮밥',icon:'🥗',level:40,cost:48,heal:40,min:20,buff:{xp:.08},desc:'경험치 +8%'},
- {id:'abalone',name:'전복죽',icon:'🥣',level:48,cost:60,heal:Infinity,min:25,buff:{maxHp:40},desc:'체력 전부 회복 · 최대 체력 +40'},
- {id:'seafood',name:'해물찜',icon:'🦀',level:56,cost:70,heal:60,min:25,buff:{power:.08,tension:.08},desc:'당기는 힘 +8% · 줄 긴장 −8%'},
- {id:'galbi',name:'갈비찜',icon:'🥩',level:64,cost:90,heal:60,min:25,buff:{power:.14},desc:'당기는 힘 +14%'},
- {id:'samgye',name:'보양 삼계탕',icon:'🐔',level:72,cost:110,heal:Infinity,min:30,buff:{maxHp:60,power:.08},desc:'체력 전부 회복 · 최대 체력 +60 · 당기는 힘 +8%'},
- {id:'dragon',name:'용궁 해신탕',icon:'🐉',level:82,cost:140,heal:Infinity,min:30,buff:{power:.16,tension:.12},desc:'체력 전부 회복 · 당기는 힘 +16% · 줄 긴장 −12%'},
- {id:'starlight',name:'별빛 정식',icon:'🌟',level:92,cost:180,heal:Infinity,min:30,buff:{power:.18,xp:.12,luck:20},desc:'체력 전부 회복 · 당기는 힘 +18% · 경험치 +12% · 행운 +20'}
+ {id:'riceball',name:'주먹밥',icon:'🍙',level:1,cost:6,heal:30,regen:30,min:0,buff:{},desc:''},
+ {id:'gimbap',name:'김밥',icon:'🍱',level:4,cost:10,heal:60,regen:45,min:5,buff:{wait:.05},desc:'입질 대기 −5%'},
+ {id:'fishcake',name:'어묵탕',icon:'🍢',level:8,cost:14,heal:50,regen:40,min:6,buff:{maxHp:15},desc:'최대 체력 +15'},
+ {id:'ramen',name:'라면',icon:'🍜',level:12,cost:18,heal:30,regen:30,min:6,buff:{power:.05},desc:'당기는 힘 +5%'},
+ {id:'tteokbokki',name:'떡볶이',icon:'🌶️',level:18,cost:22,heal:30,regen:30,min:6,buff:{tension:.08},desc:'줄 긴장 증가 −8%'},
+ {id:'maeuntang',name:'매운탕',icon:'🍲',level:25,cost:30,heal:120,regen:60,min:8,buff:{power:.06},desc:'당기는 힘 +6%'},
+ {id:'eel',name:'장어구이',icon:'🍖',level:32,cost:40,heal:60,regen:45,min:8,buff:{power:.1},desc:'당기는 힘 +10%'},
+ {id:'hoedeop',name:'회덮밥',icon:'🥗',level:40,cost:48,heal:60,regen:45,min:8,buff:{xp:.08},desc:'경험치 +8%'},
+ {id:'abalone',name:'전복죽',icon:'🥣',level:48,cost:60,heal:200,regen:60,min:10,buff:{maxHp:40},desc:'최대 체력 +40'},
+ {id:'seafood',name:'해물찜',icon:'🦀',level:56,cost:70,heal:100,regen:60,min:10,buff:{power:.08,tension:.08},desc:'당기는 힘 +8% · 줄 긴장 −8%'},
+ {id:'galbi',name:'갈비찜',icon:'🥩',level:64,cost:90,heal:100,regen:60,min:10,buff:{power:.14},desc:'당기는 힘 +14%'},
+ {id:'samgye',name:'보양 삼계탕',icon:'🐔',level:72,cost:110,heal:300,regen:90,min:12,buff:{maxHp:60,power:.08},desc:'최대 체력 +60 · 당기는 힘 +8%'},
+ {id:'dragon',name:'용궁 해신탕',icon:'🐉',level:82,cost:140,heal:400,regen:90,min:12,buff:{power:.16,tension:.12},desc:'당기는 힘 +16% · 줄 긴장 −12%'},
+ {id:'starlight',name:'별빛 정식',icon:'🌟',level:92,cost:180,heal:500,regen:90,min:12,buff:{power:.18,xp:.12,luck:20},desc:'당기는 힘 +18% · 경험치 +12% · 행운 +20'}
 ];
+// Full line for lists: heal over time, then the buff and how long it lasts.
+export const foodDesc=f=>[`체력 +${f.heal} (${f.regen}초 동안 조금씩)`,f.desc,f.min?`${f.min}분`:''].filter(Boolean).join(' · ');
 export const foodInfo=id=>FOODS.find(f=>f.id===id);
 const economyUnit=s=>REGIONS[BOATS[s.boatLicense]?.region??0]?.bait||16;
 export const foodPrice=(s,food)=>repPrice(s,Math.round(food.cost*economyUnit(s)));
 export function activeMeal(s){const m=s.meal;if(!m||!foodInfo(m.id)||!(m.until>s.seconds))return null;return {...foodInfo(m.id),left:m.until-s.seconds};}
 export function mealBuff(s){return activeMeal(s)?.buff||{};}
-export function buyFood(s,id,n=1,spend){const f=foodInfo(id);if(!f||!Number.isInteger(n)||n<1||n>20||playerLevel(s)<f.level)return false;if(!spend(s,foodPrice(s,f)*n))return false;s.foods=s.foods||{};s.foods[id]=(s.foods[id]||0)+n;return true;}
-export function eatFood(s,id,maxHP){const f=foodInfo(id);if(!f||!(s.foods?.[id]>0))return false;s.foods[id]--;if(f.min>0)s.meal={id,until:s.seconds+f.min*60};else if(s.meal&&!activeMeal(s))s.meal=null;s.hp=Math.min(maxHP(s),s.hp+(f.heal===Infinity?Infinity:f.heal));return true;}
+export function buyFood(s,id,n=1,spend){const f=foodInfo(id);if(!f||!Number.isInteger(n)||n<1||n>9999||playerLevel(s)<f.level)return false;if(!spend(s,foodPrice(s,f)*n))return false;s.foods=s.foods||{};s.foods[id]=(s.foods[id]||0)+n;return true;}
+export function eatFood(s,id,maxHP){const f=foodInfo(id);if(!f||!(s.foods?.[id]>0))return false;s.foods[id]--;if(f.min>0)s.meal={id,until:s.seconds+f.min*60};else if(s.meal&&!activeMeal(s))s.meal=null;
+ // Healing comes in slowly; a new dish adds what is left of the previous one.
+ const r=activeRegen(s),left=r?r.rate*r.left:0;s.regen={id,until:s.seconds+f.regen,rate:(f.heal+left)/f.regen};return true;}
+export function activeRegen(s){const r=s.regen;if(!r||!(r.until>s.seconds)||!(r.rate>0))return null;return {...r,left:r.until-s.seconds,food:foodInfo(r.id)};}
+// Heal for dt seconds of play: the fight's stamina while fighting, otherwise the saved stamina.
+export function applyRegen(s,dt,maxHP,fight=null){const r=activeRegen(s);if(!r||dt<=0)return 0;const amount=r.rate*Math.min(dt,r.left);
+ if(fight&&!fight.done){const before=fight.hero;fight.hero=Math.min(fight.heroMax,fight.hero+amount);return fight.hero-before;}
+ const before=s.hp;s.hp=Math.min(maxHP(s),s.hp+amount);return s.hp-before;}

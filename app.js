@@ -18,7 +18,7 @@ const reelInput=createReelInput();
 import {createCombatFX} from './effects.js';
 const $=id=>document.getElementById(id), fmt=n=>Math.round(n).toLocaleString('ko-KR'), esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state=STARTER(),storageWarning=false,loadError=false;
-try{const raw=localStorage.getItem(SAVE_KEY);if(raw)state=validateSave(JSON.parse(raw));}catch{loadError=true;}
+try{const raw=localStorage.getItem(SAVE_KEY);if(raw){try{state=validateSave(JSON.parse(raw));}catch{loadError=true;try{localStorage.setItem(SAVE_KEY+'-backup-'+Date.now(),raw);}catch{}}}}catch{loadError=true;}
 ensureEquipment(state);
 let view='town';
 let castAim=.5,castTarget={x:500,y:670},castFlight=1;
@@ -135,7 +135,7 @@ function tick(now){const dt=Math.min(.08,(now-last)/1000);last=now;
    hint(fight.tension>78?'줄이 위험해요! 손을 떼고 줄을 풀어 주세요':fight.burst>0?'보스 돌진! 손을 떼서 줄을 풀어요':fight.direction===1?'물고기 → · 왼쪽 수면을 터치해 감기':'물고기 ← · 오른쪽 수면을 터치해 감기',fight.tension>78);
    if(fight.done==='caught')caught();else if(fight.done==='lost')fail(fight.failure==='timeout-line'?'제한 시간 초과! 버티던 낚싯줄이 끊어졌어요. 장비를 강화해 보세요.':fight.failure==='timeout-bait'?'제한 시간 초과! 미끼를 먹고 달아났어요. 장비와 공격 스킬을 확인하세요.':fight.hero<=0?'힘이 다했어요. 반대 방향을 보고 당겨 보세요.':'줄이 팽팽해져 끊어졌어요. 쉬어 가며 당겨요!');
   }
-  if(hudClock>1){hudClock=0;render();}if(saveClock>10){saveClock=0;save();}
+  if(hudClock>1){hudClock=0;render();}if(saveClock>3){saveClock=0;save();}
  }
  requestAnimationFrame(tick);
 }
@@ -185,7 +185,7 @@ body.addEventListener('click',async e=>{const b=e.target.closest('[data-do]');if
  if(cmd==='reload'){save();location.reload();}
 });
 let pendingImport=null;$('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>5000000)throw Error('저장 파일이 너무 커요.');pendingImport=validateSave(JSON.parse(await file.text()));show('저장 파일을 가져올까요?',`<p>현재 진행을 파일 속 기록으로 바꿉니다.</p><div class="notice">${REGIONS[pendingImport.region].name} · ${pendingImport.caught}마리 · ${fmt(pendingImport.coins)} G</div><button class="primary" id="confirmImport">이 기록으로 이어하기</button><button class="secondary" data-do="settings">취소</button>`,'import');$('confirmImport').onclick=()=>{state=pendingImport;pendingImport=null;save();close();resetIdle('가져온 여행을 이어갈 준비가 됐어요.');toast('저장 파일을 가져왔어요.');};}catch(err){toast(err.message||'올바른 저장 파일이 아니에요.',4000);}e.target.value='';};
-document.addEventListener('visibilitychange',()=>{releaseInput();if(document.hidden){save();paused=true;}render();});window.addEventListener('pagehide',save);window.addEventListener('blur',()=>{releaseInput();if(phase!=='idle')paused=true;render();});$('pauseOverlay').onclick=()=>{paused=false;last=performance.now();render();};
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save();try{releaseInput();}catch{}if(document.hidden)paused=true;render();});for(const ev of ['pagehide','freeze','beforeunload'])window.addEventListener(ev,()=>save());window.addEventListener('blur',()=>{releaseInput();if(phase!=='idle')paused=true;render();});$('pauseOverlay').onclick=()=>{paused=false;last=performance.now();render();};
 if('serviceWorker'in navigator&&!['localhost','127.0.0.1'].includes(location.hostname)){navigator.serviceWorker.register('./sw.js').then(r=>{reg=r;}).catch(()=>{});}
 function goTown(){
  if(phase!=='idle'){show('마을로 돌아갈까요?',`<p>진행 중인 낚시를 마치고 물결항으로 돌아갑니다. 사용한 미끼는 돌려받지 못하지만 이미 잡은 물고기는 그대로 보관돼요.</p><button class="secondary" data-do="town-confirm">낚시를 멈추고 귀항</button><button class="primary" data-do="resume-fishing">낚시 계속하기</button>`,'return');return;}
@@ -268,6 +268,12 @@ async function handleV2(cmd,id,b){
  render();return true;
 }
 resetIdle();requestAnimationFrame(tick);
+{let exitArmed=0;const guard=()=>{try{history.pushState({jo:1},'');}catch{}};guard();
+ window.addEventListener('popstate',()=>{save();
+  if(modal.open){close();guard();return;}
+  if(view==='fish'){goTown();guard();return;}
+  if(Date.now()-exitArmed<2500){history.back();return;}
+  exitArmed=Date.now();toast('저장했어요. 뒤로가기를 한 번 더 누르면 게임을 나가요.',2500);guard();});}
 // Auto fishing keeps settling on the wall clock (timers keep running at a slower pace in hidden tabs).
 $('autoBtn').onclick=e=>{e.stopPropagation();openAuto();};$('autoOverlay').addEventListener('click',e=>{e.stopPropagation();if(e.target.closest('[data-do="auto-stop"]'))handleV3('auto-stop');else openAuto();});$('autoOverlay').addEventListener('pointerdown',e=>e.stopPropagation());setInterval(()=>runAuto(false),1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)runAuto(true);});$('autoPill').onclick=e=>{e.stopPropagation();openAuto();};if(autoRunning(state)){state.region=state.auto.region;view='fish';}runAuto(true);render();
 if(state.migrated){delete state.migrated;save();toast('기존 기록을 새 배·장비 체계로 옮겼어요. 보관함 강화 비용은 돌려드렸어요.',6000);}

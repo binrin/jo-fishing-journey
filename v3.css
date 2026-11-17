@@ -140,3 +140,9 @@
 .auto-overlay button{margin-top:4px;background:#ffe9a8;color:#4a3420;border-radius:10px;padding:6px 14px;font-weight:800}
 .auto-overlay b::before{content:'';display:inline-block;width:10px;height:10px;margin-right:6px;border-radius:50%;background:#7fffb0;box-shadow:0 0 8px #7fffb0;animation:auto-blink 1.2s ease-in-out infinite}
 @keyframes auto-blink{50%{opacity:.25}}
+/* auto fishing status on the town map */
+.auto-pill{position:absolute;left:50%;top:75.5%;transform:translateX(-50%);z-index:6;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 14px 7px;border-radius:14px;background:#0f3a4ee8;color:#eaf8ff;border:2px solid #7fd4f5;box-shadow:0 4px 14px #0006;max-width:88%;white-space:nowrap}
+.auto-pill b{font-size:14px;display:flex;align-items:center;gap:6px}
+.auto-pill span{font-size:11px;color:#ffe38a;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.auto-pill i{position:absolute;left:10px;top:11px;width:9px;height:9px;border-radius:50%;background:#7fffb0;box-shadow:0 0 8px #7fffb0;animation:auto-blink 1.2s ease-in-out infinite}
+.auto-pill b{padding-left:8px}

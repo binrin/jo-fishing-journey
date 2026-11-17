@@ -15,10 +15,12 @@ export function canStartAuto(s){
 }
 export function startAuto(s,now=Date.now()){
  if(canStartAuto(s))return false;
- s.auto={on:true,since:now,last:now,acc:0,next:null,region:s.region,bait:s.bait,caught:0,missed:0,gold:0,xp:0,used:0,reason:''};
+ s.auto={on:true,since:now,last:now,acc:0,next:null,region:s.region,bait:s.bait,caught:0,missed:0,gold:0,xp:0,used:0,reason:'',seen:true};
  return true;
 }
-export function stopAuto(s,reason='stop'){if(!s.auto)return null;s.auto.on=false;s.auto.reason=reason;s.auto.next=null;return s.auto;}
+export function stopAuto(s,reason='stop'){if(!s.auto)return null;s.auto.on=false;s.auto.reason=reason;s.auto.next=null;s.auto.ended=Date.now();s.auto.seen=reason==='stop';return s.auto;}
+// A run that ended by itself (bait ran out) whose result the player has not seen yet.
+export function unseenAutoResult(s){return Boolean(s.auto&&!s.auto.on&&s.auto.seen===false);}
 
 // An ordinary fish for auto fishing: re-roll ornamentals, never a trophy-size grade.
 function ordinaryFish(s,rng){
@@ -39,8 +41,8 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
  a.acc+=Math.max(0,(now-a.last)/1000);a.last=now;
  for(let guard=0;guard<100000;guard++){
   if(!a.next){
-   if(!(s.baitStock[s.bait]>0)){stopAuto(s,'bait');break;}
-   const pick=ordinaryFish(s,rng);if(!pick){stopAuto(s,'empty');break;}
+   if(!(s.baitStock[s.bait]>0)){stopAuto(s,'bait');a.ended=now-a.acc*1000;break;}
+   const pick=ordinaryFish(s,rng);if(!pick){stopAuto(s,'empty');a.ended=now-a.acc*1000;break;}
    s.baitStock[s.bait]--;a.used++;got.used++;
    a.next={id:pick.f.id,g:pick.g,dur:autoAttemptSeconds(s,pick.f,pick.g)};
   }

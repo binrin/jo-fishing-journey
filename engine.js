@@ -6,7 +6,7 @@ import {FISH,REGIONS} from './data.js';
 import {speciesFightFactor,speciesPriceFactor,typicalLength} from './species-traits.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,xpForLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS,boatPerks,LEGACY_BAIT,FIGHT_SCALE} from './progression.js';
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff} from './systems.js';
-export const VERSION='3.1.2',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
+export const VERSION='3.1.3',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export const STARTER=()=>({schema:3,coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:['strike','elastic','shock'],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
@@ -17,7 +17,7 @@ export const gearPrice=s=>repPrice(s,TACKLE[s.tackle].upgrades[s.tackleUpgrade]|
 export const baitPrice=(s,id)=>Math.max(1,repPrice(s,Math.round(REGIONS[BOATS[s.boatLicense].region].bait*(BAITS.find(b=>b.id===id)?.factor||1))));
 export function spend(s,n){if(!Number.isFinite(n)||n<0||s.coins<n||s.debt>0)return false;s.coins-=n;s.stats.spent+=n;return true;}
 export function credit(s,n){n=Math.max(0,Math.round(n));s.stats.earned+=n;const debt=Math.min(s.debt,n);s.debt-=debt;s.coins+=n-debt;}
-export function buyBait(s,id,n=10){if(!BAITS.some(b=>b.id===id&&playerLevel(s)>=(b.level||1))||!Number.isInteger(n)||n<1||n>100)return false;const fee=baitPrice(s,id)*n;if(!spend(s,fee))return false;s.baitStock[id]+=n;return true;}
+export function buyBait(s,id,n=10){if(!BAITS.some(b=>b.id===id&&playerLevel(s)>=(b.level||1))||!Number.isInteger(n)||n<1||n>99999)return false;const fee=baitPrice(s,id)*n;if(!spend(s,fee))return false;s.baitStock[id]+=n;return true;}
 export function emergencyBait(s){if(s.baitStock.worm1>=3||s.coins>=baitPrice(s,'worm1')*10)return false;const n=10,fee=baitPrice(s,'worm1')*n;s.debt+=fee;s.stats.spent+=fee;s.baitStock.worm1+=n;return true;}
 export function chargeBait(s){if(s.baitStock[s.bait]<=0)return false;s.baitStock[s.bait]--;return true;}
 export function upgradeGear(s){if(s.tackleUpgrade>=5||playerLevel(s)<gearRequiredLevel(s.tackle,s.tackleUpgrade+1)||!spend(s,gearPrice(s)))return false;s.tackleUpgrade++;return true;}

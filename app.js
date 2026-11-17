@@ -5,7 +5,7 @@ import {gameTime,PERIODS,waitUntil,activityWeight,scheduleLabel,ecology} from '.
 import {castTargets,castResult,fishPeriod,weightLabel} from './catch-rules.js';
 import {castLanding} from './water-layout.js';
 import {FISH,REGIONS} from './data.js';
-import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,gearPrice,upgradeGear,gate,travel,finish,chooseFish,fishGrade,addCatch,sell,validateSave,chargeBait,makeFight,fightStep,tapStrike,TAP_COMBO_MAX,skill,SKILL_COOLDOWN,critical,spend,maxHP,buyBait,emergencyBait,buyTackle,buyBoat,selectBoat,sellBoat,sleep,upgradeHome,transferFish,learnSkill,equipSkill,legendReady,resetSkills,waitSeconds,fightPlan} from './engine.js';
+import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,gearPrice,baitPrice,upgradeGear,gate,travel,finish,chooseFish,fishGrade,addCatch,sell,validateSave,chargeBait,makeFight,fightStep,tapStrike,TAP_COMBO_MAX,skill,SKILL_COOLDOWN,critical,spend,maxHP,buyBait,emergencyBait,buyTackle,buyBoat,selectBoat,sellBoat,sleep,upgradeHome,transferFish,learnSkill,equipSkill,legendReady,resetSkills,waitSeconds,fightPlan} from './engine.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,MAX_LEVEL,playerLevel,xpForLevel,availableSP} from './progression.js';
 import {panelContent,boatArt} from './panels.js';
 import {sprite,fishStyle,waterStyle,waterVars} from './art.js';
@@ -40,7 +40,8 @@ context??=new (window.AudioContext||window.webkitAudioContext)();if(context.stat
 function buzz(ms=25){if(state.haptics&&navigator.vibrate)navigator.vibrate(ms);}
 
 function artPos(id){return `${(id%2)*100}% ${Math.floor(id/2)*25}%`;}
-function show(title,html,name=''){releaseInput();panel=name;$('modalTitle').textContent=title;body.innerHTML=html;if(!modal.open)modal.showModal();$('closeModal').focus({preventScroll:true});body.scrollTop=0;requestAnimationFrame(()=>body.scrollTop=0);}
+let scrollTarget=0;
+function show(title,html,name=''){releaseInput();const same=modal.open&&name&&name===panel,top=body.scrollTop,opened=same?[...body.querySelectorAll('details')].map(d=>d.open):null;panel=name;$('modalTitle').textContent=title;body.innerHTML=html;if(same){body.querySelectorAll('details').forEach((d,i)=>{if(opened[i]!==undefined)d.open=opened[i];});}if(!modal.open)modal.showModal();$('closeModal').focus({preventScroll:true});scrollTarget=same?top:0;body.scrollTop=scrollTarget;requestAnimationFrame(()=>body.scrollTop=scrollTarget);}
 function close(){modal.close();panel='';releaseInput();save();render();}
 $('closeModal').onclick=close;modal.addEventListener('cancel',()=>{panel='';releaseInput();});modal.addEventListener('click',e=>{if(e.target===modal){const r=modal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)close();}});
 function renderAuto(){const on=autoRunning(state),a=state.auto,btn=$('autoBtn'),ov=$('autoOverlay'),pill=$('autoPill');if(pill){pill.hidden=!on;if(on)pill.innerHTML=`<i></i><b>🤖 자동 낚시 중</b><span>${REGIONS[a.region].display||REGIONS[a.region].name} · ${fmt(a.caught)}마리 · +${fmt(a.gold)} G · 미끼 ${fmt(state.baitStock[state.bait]||0)}</span>`;}if(btn){btn.textContent=on?`🤖 ${fmt(a.caught)}마리`:'🤖 자동';btn.classList.toggle('active',on);}
@@ -219,7 +220,28 @@ function runAuto(report=false){
  const gap=(Date.now()-state.auto.last)/1000,d=autoTick(state);if(!d.caught&&!d.missed&&autoRunning(state))return;save();render();
  if(!autoRunning(state)){if(!document.hidden&&(!modal.open||report)&&phase==='idle')showAutoEnd();return;}
  if(report&&gap>30&&d.caught>0&&!document.hidden)autoSummary('자리를 비운 동안',d,`<p class="muted">${Math.round(gap/60)}분 동안 자동 낚시를 했어요. 계속 진행 중이에요.</p>`);}
+// Calculator-style quantity picker for bait (number pad, quick adds and a MAX that spends all coins).
+let qty=null;
+function qtyMax(id){const p=baitPrice(state,id);return state.debt>0||p<=0?0:Math.min(99999,Math.floor(state.coins/p));}
+function qtyRender(){const sh=body.querySelector('.qty-sheet');if(!sh||!qty)return;const p=baitPrice(state,qty.id),max=qtyMax(qty.id),n=qty.n,over=n>max;
+ sh.querySelector('.qty-display b').textContent=fmt(n);sh.querySelector('.qty-display').classList.toggle('over',over);
+ sh.querySelector('.qty-calc').innerHTML=`개당 ${fmt(p)} G × ${fmt(n)}개 = <b>${fmt(p*n)} G</b><br><small>보유 ${fmt(state.coins)} G · 최대 ${fmt(max)}개${state.debt>0?' · 외상을 먼저 갚아야 해요':''}</small>`;
+ const buy=sh.querySelector('[data-do="qty-buy"]');buy.disabled=!n||over;buy.textContent=over?'금화가 부족해요':n?`${fmt(n)}개 구매 · ${fmt(p*n)} G`:'수량을 입력하세요';}
+function openQty(id){const x=BAITS.find(b=>b.id===id);if(!x)return;body.querySelector('.qty-sheet')?.remove();qty={id,n:Math.min(10,qtyMax(id))};
+ const key=(label,d,v='',cls='')=>`<button class="qty-key ${cls}" data-do="${d}" data-id="${v}">${label}</button>`;
+ const sh=document.createElement('div');sh.className='qty-sheet';sh.innerHTML=`<div class="qty-card"><div class="qty-head"><strong>${x.name} 구매</strong><small>지금 ${fmt(state.baitStock[id]||0)}개 보유</small>${key('✕','qty-close','','qty-x')}</div><div class="qty-display"><b>0</b><span>개</span></div><p class="qty-calc"></p><div class="qty-quick">${key('+1','qty-add',1)}${key('+10','qty-add',10)}${key('+50','qty-add',50)}${key('+100','qty-add',100)}${key('최대','qty-max','','qty-maxkey')}</div><div class="qty-pad">${[1,2,3,4,5,6,7,8,9].map(d=>key(d,'qty-digit',d)).join('')}${key('C','qty-clear','','qty-fn')}${key('0','qty-digit',0)}${key('⌫','qty-back','','qty-fn')}</div><button class="primary" data-do="qty-buy">구매</button></div>`;
+ body.append(sh);qtyRender();}
 function handleV3(cmd,id,b){
+ if(cmd==='bait-qty'){openQty(id);return true;}
+ if(cmd.startsWith('qty-')&&qty){const max=qtyMax(qty.id);
+  if(cmd==='qty-close'){body.querySelector('.qty-sheet')?.remove();qty=null;return true;}
+  if(cmd==='qty-digit')qty.n=Math.min(99999,qty.n*10+Number(id));
+  if(cmd==='qty-back')qty.n=Math.floor(qty.n/10);
+  if(cmd==='qty-clear')qty.n=0;
+  if(cmd==='qty-add')qty.n=Math.min(99999,qty.n+Number(id));
+  if(cmd==='qty-max')qty.n=max;
+  if(cmd==='qty-buy'){const x=BAITS.find(v=>v.id===qty.id),n=qty.n,cost=baitPrice(state,qty.id)*n;if(n>0&&buyBait(state,qty.id,n)){save();qty=null;openPanel('shop');toast(`${x.name} ${fmt(n)}개 구매 · −${fmt(cost)} G`);sound('catch');buzz(20);}else toast('금화·레벨과 외상을 확인해 주세요.');return true;}
+  qtyRender();return true;}
  if(cmd==='close'){close();return true;}
  if(cmd==='auto'){openAuto();return true;}
  if(cmd==='auto-view'){if(autoRunning(state)){state.region=state.auto.region;view='fish';}close();render();return true;}

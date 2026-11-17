@@ -146,3 +146,23 @@
 .auto-pill span{font-size:11px;color:#ffe38a;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .auto-pill i{position:absolute;left:10px;top:11px;width:9px;height:9px;border-radius:50%;background:#7fffb0;box-shadow:0 0 8px #7fffb0;animation:auto-blink 1.2s ease-in-out infinite}
 .auto-pill b{padding-left:8px}
+
+/* quantity calculator sheet (bait) */
+.qty-sheet{position:fixed;inset:0;z-index:150;background:#12393e88;display:flex;align-items:flex-end;justify-content:center}
+@keyframes qty-in{from{opacity:0}to{opacity:1}}
+.qty-card{width:100%;max-width:465px;background:#fff9e9;border-radius:20px 20px 0 0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px #0005}
+@keyframes qty-up{from{transform:translateY(40px)}to{transform:none}}
+.qty-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.qty-head strong{font-size:17px}.qty-head small{font-size:12px;color:#708174;flex:1}
+.qty-key.qty-x{width:32px;height:32px;border-radius:50%;background:#e4dcc6;font-size:15px;flex:0 0 auto}
+.qty-display{display:flex;align-items:baseline;justify-content:flex-end;gap:6px;background:#203b3d;color:#fff4c9;border-radius:14px;padding:10px 16px;font-variant-numeric:tabular-nums}
+.qty-display b{font-size:36px;letter-spacing:-1px}.qty-display span{font-size:15px;opacity:.8}
+.qty-display.over b{color:#ff9d8a}
+.qty-calc{text-align:right;font-size:13px;margin:6px 2px 8px;line-height:1.45}.qty-calc b{font-size:15px;color:#18847f}.qty-calc small{color:#708174}
+.qty-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:6px}
+.qty-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.qty-key{border-radius:12px;background:#f1e8cd;padding:11px 0;font-size:19px;font-weight:700;box-shadow:0 2px 0 #d8caa4}
+.qty-quick .qty-key{font-size:14px;padding:9px 0;background:#e2efdb;box-shadow:0 2px 0 #b9d2b0}
+.qty-key.qty-maxkey{background:#ffd66b;box-shadow:0 2px 0 #c58a16;color:#5a3a00}
+.qty-key.qty-fn{background:#e8e2d2;color:#6f604a}
+.qty-card .primary{margin:10px 0 0}

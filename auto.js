@@ -7,8 +7,7 @@ import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPric
 import {catchXP,BAITS,playerLevel} from './progression.js';
 import {luck,regionProfile} from './systems.js';
 // Auto fishing uses the basic (first-grade) bait of the spot's recommended family, buying one at a time
-// with coins when none is left. A run lasts until coins run out or AUTO_MAX_HOURS of real time.
-export const AUTO_MAX_HOURS=12;
+// with coins when none is left. A run has no time limit: it lasts until the coins run out or it is stopped.
 export function autoBait(s){const fam=regionProfile(s.region).recommended,b=BAITS.find(x=>x.id===fam+'1');return b&&playerLevel(s)>=(b.level||1)?b.id:'worm1';}
 export const AUTO_SALE=.25,AUTO_XP=.25,AUTO_SUCCESS=.9,AUTO_CAST=4,AUTO_RESULT=2;
 // Good reputation raises the sale share and experience (25% -> up to 40% at reputation 100);
@@ -53,7 +52,6 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
  a.acc+=Math.max(0,(now-a.last)/1000);a.last=now;
  for(let guard=0;guard<100000;guard++){
   if(!a.next){
-   if((a.ran||0)>=AUTO_MAX_HOURS*3600){stopAuto(s,'time');a.ended=now-a.acc*1000;break;}
    const id=a.bait||autoBait(s);
    if(!(s.baitStock[id]>0)){const price=baitPrice(s,id);if(!buyBait(s,id,1)){stopAuto(s,'money');a.ended=now-a.acc*1000;break;}a.bought=(a.bought||0)+1;a.spent=(a.spent||0)+price;got.bought++;got.spent+=price;}
    const prev=s.bait;s.bait=id;const pick=ordinaryFish(s,rng);s.bait=prev;if(!pick){stopAuto(s,'empty');a.ended=now-a.acc*1000;break;}

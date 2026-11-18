@@ -3,9 +3,13 @@
 // Only ordinary fish bite (no trophies, bosses or ornamentals); every catch is sold on the spot
 // for 25% of its price and gives 25% of its experience.
 import {FISH} from './data.js';
-import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan} from './engine.js';
-import {catchXP} from './progression.js';
-import {luck} from './systems.js';
+import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice} from './engine.js';
+import {catchXP,BAITS,playerLevel} from './progression.js';
+import {luck,regionProfile} from './systems.js';
+// Auto fishing uses the basic (first-grade) bait of the spot's recommended family, buying one at a time
+// with coins when none is left. A run lasts until coins run out or AUTO_MAX_HOURS of real time.
+export const AUTO_MAX_HOURS=12;
+export function autoBait(s){const fam=regionProfile(s.region).recommended,b=BAITS.find(x=>x.id===fam+'1');return b&&playerLevel(s)>=(b.level||1)?b.id:'worm1';}
 export const AUTO_SALE=.25,AUTO_XP=.25,AUTO_SUCCESS=.9,AUTO_CAST=4,AUTO_RESULT=2;
 // Good reputation raises the sale share and experience (25% -> up to 40% at reputation 100);
 // luck lets a trophy (월척) bite even on auto: 1% at luck 0 (the minimum), +0.03%p per luck, up to 10%.
@@ -16,12 +20,12 @@ export function autoRates(s){const r=Math.max(0,Math.min(100,s.rep||0))/100,L=Ma
 export function autoRunning(s){return Boolean(s.auto&&s.auto.on);}
 export function canStartAuto(s){
  if(autoRunning(s))return '이미 자동 낚시 중이에요.';
- if(!(s.baitStock[s.bait]>0))return '미끼가 없어요. 미끼를 사거나 다른 미끼를 골라 주세요.';
+ const id=autoBait(s);if(!(s.baitStock[id]>0)&&(s.debt>0||s.coins<baitPrice(s,id)))return '일반 미끼를 살 금화가 없어요.';
  return '';
 }
 export function startAuto(s,now=Date.now()){
  if(canStartAuto(s))return false;
- s.auto={on:true,since:now,last:now,acc:0,next:null,region:s.region,bait:s.bait,caught:0,missed:0,trophies:0,gold:0,xp:0,used:0,reason:'',seen:true};
+ s.auto={on:true,since:now,last:now,acc:0,ran:0,next:null,region:s.region,bait:autoBait(s),caught:0,missed:0,trophies:0,gold:0,xp:0,used:0,bought:0,spent:0,reason:'',seen:true};
  return true;
 }
 export function stopAuto(s,reason='stop'){if(!s.auto)return null;s.auto.on=false;s.auto.reason=reason;s.auto.next=null;s.auto.ended=Date.now();s.auto.seen=reason==='stop';return s.auto;}
@@ -45,17 +49,19 @@ export function autoPace(s){const pool=FISH.filter(x=>x.regions.includes(s.regio
 
 // Settle everything that happened between the last tick and `now`. Returns what this tick added.
 export function autoTick(s,now=Date.now(),rng=Math.random){
- const a=s.auto,got={caught:0,missed:0,trophies:0,gold:0,xp:0,used:0,ids:{}};if(!a||!a.on)return got;
+ const a=s.auto,got={caught:0,missed:0,trophies:0,gold:0,xp:0,used:0,bought:0,spent:0,ids:{}};if(!a||!a.on)return got;
  a.acc+=Math.max(0,(now-a.last)/1000);a.last=now;
  for(let guard=0;guard<100000;guard++){
   if(!a.next){
-   if(!(s.baitStock[s.bait]>0)){stopAuto(s,'bait');a.ended=now-a.acc*1000;break;}
-   const pick=ordinaryFish(s,rng);if(!pick){stopAuto(s,'empty');a.ended=now-a.acc*1000;break;}
-   s.baitStock[s.bait]--;a.used++;got.used++;
+   if((a.ran||0)>=AUTO_MAX_HOURS*3600){stopAuto(s,'time');a.ended=now-a.acc*1000;break;}
+   const id=a.bait||autoBait(s);
+   if(!(s.baitStock[id]>0)){const price=baitPrice(s,id);if(!buyBait(s,id,1)){stopAuto(s,'money');a.ended=now-a.acc*1000;break;}a.bought=(a.bought||0)+1;a.spent=(a.spent||0)+price;got.bought++;got.spent+=price;}
+   const prev=s.bait;s.bait=id;const pick=ordinaryFish(s,rng);s.bait=prev;if(!pick){stopAuto(s,'empty');a.ended=now-a.acc*1000;break;}
+   s.baitStock[id]--;a.used++;got.used++;
    a.next={id:pick.f.id,g:pick.g,dur:autoAttemptSeconds(s,pick.f,pick.g)};
   }
   if(a.acc<a.next.dur)break;
-  a.acc-=a.next.dur;const f=FISH[a.next.id],g=a.next.g;a.next=null;
+  a.acc-=a.next.dur;a.ran=(a.ran||0)+a.next.dur;const f=FISH[a.next.id],g=a.next.g;a.next=null;
   if(rng()>AUTO_SUCCESS){a.missed++;got.missed++;continue;}
   const rate=autoRates(s),gold=Math.max(1,Math.round(quote(s,f,g)*rate.sale)),xp=Math.max(1,Math.round(catchXP(s.region,f,g)*rate.xp));if(g===0){a.trophies=(a.trophies||0)+1;got.trophies++;}
   credit(s,gold);s.xp+=xp;s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;

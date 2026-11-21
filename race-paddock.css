@@ -1,0 +1,121 @@
+.race-paddock{
+ --race-ink:#153b46;
+ --race-sub:#42636a;
+ --race-edge:#bbd9dc;
+ --race-paper:#f5fbfa;
+ --race-lagoon:#e5f4f2;
+ display:grid;
+ gap:12px;
+ color:var(--race-ink);
+}
+.race-paddock h2,.race-paddock h3{margin:0;line-height:1.15}
+.race-paddock .race-banner{
+ min-height:clamp(124px,29vw,184px);
+ padding:14px 16px;
+ background-position:center 53%;
+ border-radius:12px;
+}
+.race-paddock .race-banner h2{font-size:clamp(1.45rem,5vw,2rem)}
+.race-paddock .race-banner p{margin:5px 0 0;color:#e4f5ed}
+.race-paddock .race-menu{margin:0}
+.race-paddock .race-menu>button{padding:8px 6px;font-size:.88rem}
+.race-paddock button:focus-visible,.race-disclosure summary:focus-visible{outline:3px solid #007989;outline-offset:2px}
+.race-boat-card{
+ display:grid;
+ grid-template-columns:70px minmax(0,1fr);
+ align-items:center;
+ gap:8px 12px;
+ background:var(--race-lagoon);
+ border:1px solid var(--race-edge);
+ border-radius:12px;
+ padding:12px;
+}
+.race-boat-card .boat-art{width:100%;max-width:70px;max-height:none;margin:0}
+.race-boat-card small{display:block;color:var(--race-sub);font-size:.73rem;margin-bottom:3px}
+.race-boat-card h3{font-size:1.05rem}
+.race-boat-card dl{grid-column:1/-1}
+.race-stat-grid{
+ display:flex;
+ flex-wrap:wrap;
+ gap:9px 12px;
+ margin:0;
+}
+.race-stat-grid>div{flex:1 1 auto;min-width:0}
+.race-stat-grid dt{font-size:.72rem;color:var(--race-sub);font-weight:normal}
+.race-stat-grid dd{
+ margin:3px 0 0;
+ font-size:.87rem;
+ font-weight:bold;
+ font-variant-numeric:tabular-nums;
+ overflow-wrap:anywhere;
+}
+.race-paddock .race-league{padding:12px;background:var(--race-paper);border-color:var(--race-edge);border-radius:12px}
+.race-paddock .race-league header b{border-radius:5px;padding:3px 7px;background:#d7efeb}
+.race-paddock .race-league-locked header b{background:#e7edee;color:#52646a}
+.race-league-money{margin:11px 0 8px}
+.race-league-meta{display:flex;flex-wrap:wrap;gap:3px 10px;color:var(--race-sub);font-size:.76rem}
+.race-paddock .race-league .race-recommend{margin:9px 0 0}
+.race-paddock .race-league .primary{margin:9px 0 0;min-height:44px}
+.race-disclosure{border:1px solid var(--race-edge);border-radius:10px;background:var(--race-paper);padding:0 10px}
+.race-disclosure summary{min-height:44px;padding:10px 3px;cursor:pointer;font-weight:bold;line-height:24px}
+.race-disclosure>div,.race-disclosure>ol{margin:2px 0 10px}
+.race-disclosure>p{color:var(--race-sub);margin:3px 2px 12px;font-size:.83rem}
+.race-workshop{gap:8px}
+.race-wallet{display:flex;flex-wrap:wrap;gap:5px 14px;color:var(--race-sub);font-size:.80rem}
+.race-wallet b{color:var(--race-ink)}
+.race-workshop .race-chooser{padding:2px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;overflow:visible}
+.race-workshop .race-grade-chooser{grid-template-columns:repeat(3,minmax(0,1fr))}
+.race-workshop .race-chooser button{min-height:44px;min-width:0;padding:6px 4px}
+.race-workshop .race-showcase{
+ margin:2px 0 1px;
+ min-height:104px;
+ background:linear-gradient(90deg,#e9f7f5 0%,#e9f7f5 58%,#e9f7f500 73%),url(assets/race-workshop.webp) right 55%/auto 110% no-repeat,#e9f7f5;
+ border:1px solid var(--race-edge);
+ border-radius:12px;
+}
+.race-workshop .race-showcase img{width:clamp(70px,26%,118px);flex-shrink:0;order:2;margin-left:auto;filter:drop-shadow(0 3px 6px #12374575)}
+.race-workshop .race-showcase>div{max-width:59%}
+.race-workshop .race-showcase small{color:var(--race-sub)}
+.race-workshop .race-part{margin:0;background:var(--race-paper);border:1px solid var(--race-edge);border-radius:12px}
+.race-workshop .race-part-equipped{border-color:#68a8a1}
+.race-workshop .race-part header{align-items:center}
+.race-workshop .race-part header img{width:36px;height:36px;flex:none}
+.race-workshop .race-part h3{font-size:1.05rem}
+.race-workshop .race-active{white-space:nowrap}
+.race-workshop .race-part-level,.race-workshop .race-comparison-label{font-size:.76rem;color:var(--race-sub);margin:8px 0 4px}
+.race-comparison{padding:8px;background:var(--race-lagoon);border-radius:8px;gap:7px 10px}
+.race-increase{color:#1b6443}
+.race-decrease,.race-block{color:#853e2d}
+.race-workshop .race-actions{margin:9px 0 0}
+.race-block{font-size:.8rem;font-weight:bold;margin:5px 0 0}
+.race-menu>button:disabled,.race-actions>button:disabled{opacity:.75}
+.race-check-in-money{padding:11px;border:1px solid var(--race-edge);border-radius:10px;background:var(--race-paper)}
+.race-guide{padding:12px;background:var(--race-lagoon);border-radius:10px}
+.race-guide h3{font-size:1rem}
+.race-guide ol{margin:8px 0;padding-left:1.3rem;display:grid;gap:6px;font-size:.85rem}
+.race-guide p,.race-check-in .race-tip{margin:0;color:var(--race-sub);font-size:.8rem}
+.race-finish{
+ border-radius:12px;
+ background:linear-gradient(0deg,#082c3aee,#15455145),#154551 url(assets/race-water.webp) center/cover;
+ color:white;
+ text-align:center;
+ overflow:hidden;
+}
+.race-finish-title{padding:12px}
+.race-finish-title p{margin:0 0 6px;font-size:.76rem;color:#e1f2ef}
+.race-finish-title h2{font-size:clamp(1.55rem,6vw,2.35rem);margin-bottom:4px}
+.race-finish-title span{font-variant-numeric:tabular-nums}
+.race-results .race-podium{padding:4px 9px 0;background:transparent}
+.race-results .race-podium div{min-width:0;min-height:83px;justify-content:start;padding:7px 2px 5px;font-size:.81rem}
+.race-results .race-podium .race-podium-1{min-height:104px}
+.race-results .race-podium .race-podium-2{min-height:77px}
+.race-results .race-podium .race-podium-player{box-shadow:inset 0 0 0 3px #16797e}
+.race-results .race-podium .race-podium-rank{font-size:.78rem;font-weight:bold;margin-bottom:4px}
+.race-podium small{font-size:.69rem;font-variant-numeric:tabular-nums}
+.race-results .race-payout{text-align:left;padding:10px;border-radius:10px;background:var(--race-lagoon)}
+.race-results .race-table li{padding:5px 3px}
+@media (max-width:360px){
+ .race-paddock{gap:9px}
+ .race-workshop .race-chooser button{font-size:.74rem;padding:4px 2px}
+ .race-paddock .race-stat-grid dd{font-size:.81rem}
+}

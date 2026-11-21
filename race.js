@@ -2,7 +2,7 @@ const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 const integer=(n,max)=>Number.isInteger(n)?clamp(n,0,max):0;
 
 export const LEAGUES=['초급','중급','상급','최상급','왕급','황제급'].map((name,id)=>({
- id,name,fee:[120,900,6000,40000,270000,1900000][id],
+ id,name,fee:[450,6000,55000,180000,450000,2200000][id],
  boat:[0,2,5,9,14,20][id],water:id*5,
  recommended:[0,3,4,5,6,7][id],bait:3+id*2
 }));
@@ -63,10 +63,12 @@ export function raceMaterial(s,f,grade,region=s.region,automatic=false){
  return {name:LEAGUES[tier].name+' '+slot.material,count};
 }
 
-export const prizeFor=(tier,rank)=>Math.round(LEAGUES[tier].fee*([3,1.65,1.2][rank-1]??0));
-export const partPrice=(tier,slot)=>Math.round(LEAGUES[tier].fee*(slot==='booster'?1.45:1));
-export const upgradePrice=(tier,slot,level)=>Math.ceil(partPrice(tier,slot)*(.18+level*.1));
-export const modCost=mods=>[3,6,12][mods];
+export const prizeFor=(tier,rank,firstWin=true)=>Math.round(LEAGUES[tier].fee*([firstWin?2.5:1.4,.9,.6][rank-1]??0));
+export const raceBaitFor=tier=>LEAGUES[tier].bait;
+export const partPrice=(tier,slot)=>Math.round(LEAGUES[tier].fee*(slot==='booster'?5.8:4));
+export const upgradePrice=(tier,slot,level)=>Math.round(partPrice(tier,slot)*(.30+level*.125));
+export const modCost=mods=>[5,10,20][mods];
+export const modPrice=(tier,slot,mods)=>Math.round(partPrice(tier,slot)*[.6,1.2,2.4][mods]);
 export const partEffect=(tier,maker,part)=>(1+tier*.30)*(1+part.level*.075)*2**part.mods*maker.scale;
 
 export function changeRacePart(s,{action,slot,tier,maker},spend,rng=Math.random){
@@ -94,6 +96,7 @@ export function changeRacePart(s,{action,slot,tier,maker},spend,rng=Math.random)
  if(action==='modify'&&owned.mods<3){
   const cost=modCost(owned.mods);
   if(race.materials[tier][slot]<cost)return type.material+'이 부족해요.';
+  if(!spend(s,modPrice(tier,slot,owned.mods)))return '개조할 금화와 외상을 확인해 주세요.';
   race.materials[tier][slot]-=cost;
   owned.mods++;
   return type.name+' 개조 '+owned.mods+'단계 · 효과 2배';
@@ -175,7 +178,9 @@ export function startRace(s,tier,spend,rng=Math.random){
  const teams=Array.from({length:count-1},(_,i)=>{
   const variation=.97-i*.032+rng()*.013;
   const pace=(112+tier*14)*[1.04,1.32,1.43,1.54,1.64,1.75][tier]*variation;
-  return {name:WORDS[i]+' 팀',at:0,x:((i+1)%5-2)*26,pace,finish:null,color:'hsl('+((21+i*41)%360)+' 75% 67%)'};
+  const gridX=[-22,22,-43,43,-61,61][i%6],row=Math.floor(i/6);
+  return {name:WORDS[i]+' 팀',at:-3-row*16-(i%6)*1.4,x:gridX,gridX,pace,finish:null,
+   color:'hsl('+((21+i*41)%360)+' 75% 67%)'};
  });
  const player={name:'조선생 팀',at:0,x:0,speed:0,side:0,energy:65,impact:0,edge:false,finish:null,color:'#ffdf54'};
  return {course,stats,tier,teams,player,time:0,countdown:3,done:false,settled:false,hit:new Set(),gates:new Set()};
@@ -197,7 +202,10 @@ function advanceTeams(r,dt,t){
   const previous=team.at,launch=Math.min(1,t*(.65+(i%4)*.08));
   const rhythm=1+Math.sin(t*.85+i*1.4)*.065;
   team.at+=team.pace*launch*rhythm*dt;
-  team.x=courseCenter(r.course,team.at)+Math.sin(team.at*.007+i*1.37)*21+((i%4)-1.5)*18;
+  const center=courseCenter(r.course,team.at);
+  const passing=Math.min(1,t*.40)*Math.sin(team.at*.008+i*1.37)*((i%3)+1)*4;
+  const lane=team.gridX*(1-Math.min(.28,t*.055))+passing;
+  team.x=center+clamp(lane,-r.course.width/2+9,r.course.width/2-9);
   finishBoat(team,previous,r.course.length,t,dt);
  }
 }
@@ -252,19 +260,21 @@ export function stepRace(r,dt,input){
 export function settleRace(s,r,credit){
  if(!r.done||r.settled)return null;
  r.settled=true;
- const race=raceState(s), league=LEAGUES[r.tier], timedOut=r.player.finish===null;
+ const race=raceState(s),timedOut=r.player.finish===null;
  // Complete the field while holding the player's finish time.
  for(let t=r.time+.05;r.teams.some(team=>team.finish===null)&&t<180;t+=.05)advanceTeams(r,.05,t);
  const order=raceOrder(r).filter(team=>team!==r.player);
  const rank=timedOut?r.teams.length+1:1+order.filter(team=>team.finish!==null&&team.finish<=r.player.finish).length;
  order.splice(rank-1,0,r.player);
- const prize=timedOut?0:prizeFor(r.tier,rank);
- const unlocked=rank===1&&race.wins[r.tier]===0&&r.tier<GRADES-1;
+ const firstWin=race.wins[r.tier]===0;
+ const prize=timedOut?0:prizeFor(r.tier,rank,firstWin);
+ const unlocked=rank===1&&firstWin&&r.tier<GRADES-1;
+ const bait=rank===1?raceBaitFor(r.tier):0;
  if(!timedOut&&(race.best[r.tier]===null||r.player.finish<race.best[r.tier]))race.best[r.tier]=r.player.finish;
  if(rank===1){
   race.wins[r.tier]=Math.min(1000000,race.wins[r.tier]+1);
-  s.trophyBait=Math.min(Number.MAX_SAFE_INTEGER,(s.trophyBait||0)+league.bait);
+  s.trophyBait=Math.min(Number.MAX_SAFE_INTEGER,(s.trophyBait||0)+bait);
  }
  if(prize)credit(s,prize);
- return {rank,prize,bait:rank===1?league.bait:0,unlocked,timedOut,order};
+ return {rank,prize,bait,unlocked,timedOut,order};
 }

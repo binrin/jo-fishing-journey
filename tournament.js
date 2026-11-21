@@ -12,9 +12,15 @@ export const TOURNAMENTS=REGIONS.reduce((events,region,id)=>{
  const day=id*12;
  let month=0,monthDay=day+1;
  while(monthDay>MONTH_DAYS[month])monthDay-=MONTH_DAYS[month++];
- const fee=Math.max((events.at(-1)?.fee||0)+100,Math.round((region.boss_reward||region.bait*40)*.05/100)*100);
- events.push({id,day,date:`${month+1}월 ${monthDay}일`,grade:id+1,fee,payouts:[fee*9,fee*5,fee*2],bait:3+id*2});
+ const fee=Math.round(region.bait*32/100)*100;
+ events.push({id,day,date:`${month+1}월 ${monthDay}일`,grade:id+1,fee,payouts:[fee*1.8,fee*1.1,fee*.65].map(Math.round),bait:3+id*2});
  return events;
+},[]);
+
+// Active tournaments in older saves have already paid these entry fees.
+const legacyFees=REGIONS.reduce((fees,region)=>{
+ fees.push(Math.max((fees.at(-1)||0)+100,Math.round((region.boss_reward||region.bait*40)*.05/100)*100));
+ return fees;
 },[]);
 
 const absoluteDay=s=>Math.floor((s.seconds+s.dayOffset+150)/DAY_SECONDS);
@@ -64,7 +70,7 @@ export function startTournament(s,event,spend,rng=Math.random){
  });
  s.tournamentYears??={};
  s.tournamentYears[event.id]=tournamentYear(s);
- s.tournament={id:event.id,bots,casts:[],pending:false};
+ s.tournament={id:event.id,bots,casts:[],pending:false,entryFee:event.fee};
  s.region=event.id;
  return true;
 }
@@ -85,7 +91,8 @@ export function contestCastResult(s,size=0){
 export function finishTournament(s,credit){
  const entry=s.tournament;
  if(!entry||entry.casts.length<TOURNAMENT_CASTS)return null;
- const event=TOURNAMENTS[entry.id];
+ const latest=TOURNAMENTS[entry.id],legacyFee=legacyFees[entry.id];
+ const event=entry.entryFee===latest.fee?latest:{...latest,fee:legacyFee,payouts:[9,5,2].map(multiplier=>legacyFee*multiplier)};
  const ranking=[...entry.bots,{name:'나',size:Math.max(...entry.casts),player:true}].sort((a,b)=>b.size-a.size);
  const place=1+ranking.findIndex(row=>row.player);
  const payout=ranking[place-1].size>0?(event.payouts[place-1]||0):0;
@@ -107,7 +114,8 @@ export function restoreTournament(s,raw){
  if(!saved||saved.id!==s.region||s.tournamentYears[saved.id]==null||!Array.isArray(saved.casts)||saved.casts.length>TOURNAMENT_CASTS||saved.casts.some(size=>!Number.isSafeInteger(size)||size<0)||!Array.isArray(saved.bots)||saved.bots.length<10||saved.bots.length>20)return;
  const bots=saved.bots.filter(bot=>NAMES.includes(bot?.name)&&Number.isSafeInteger(bot.size)&&bot.size>=0).map(({name,size})=>({name,size}));
  if(bots.length!==saved.bots.length||new Set(bots.map(bot=>bot.name)).size!==bots.length)return;
- s.tournament={id:saved.id,bots,casts:[...saved.casts],pending:Boolean(saved.pending)&&saved.casts.length<TOURNAMENT_CASTS};
+ const entryFee=saved.entryFee===TOURNAMENTS[saved.id].fee?saved.entryFee:legacyFees[saved.id];
+ s.tournament={id:saved.id,bots,casts:[...saved.casts],pending:Boolean(saved.pending)&&saved.casts.length<TOURNAMENT_CASTS,entryFee};
 }
 
 export function tournamentNotice(s){

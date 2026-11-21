@@ -4,6 +4,7 @@ const number=new Intl.NumberFormat('ko-KR');
 const fmt=value=>number.format(value);
 const chance=value=>`${fmt(value*100)}%`;
 const pageSize=6;
+const bagLabel=tier=>FIND_BAGS[tier].name||`${tier+1}단계 가방`;
 const bagIcon='<svg width="24" height="24" aria-hidden="true"><use href="assets/harbor-icons.svg#item-bag"></use></svg>';
 const itemById=new Map(FIND_ITEMS.map(item=>[item.id,item]));
 const tile=item=>`<span class="find-icon" aria-hidden="true">${item.icon}</span>`;
@@ -23,16 +24,16 @@ export function createFindsUI({button,body,getState,show,save,render,toast,canOp
   const pages=Math.max(1,Math.ceil(stock.length/pageSize));
   page=Math.min(page,pages-1);
   const next=FIND_BAGS[s.finds.tier+1];
-  const bags=FIND_BAGS.map((bag,tier)=>`<li><b>${tier+1}단계</b><span>${fmt(bag.capacity)}칸</span><span>${tier===0?'기본':`${fmt(bag.price)} G`}</span>${tier===s.finds.tier?'<strong>사용 중</strong>':'<span></span>'}</li>`).join('');
+  const bags=FIND_BAGS.map((bag,tier)=>`<li><b>${bagLabel(tier)}</b><span>${fmt(bag.capacity)}칸</span><span class="find-bag-price">${tier===0?'기본':`${fmt(bag.price)} G`}</span>${tier===s.finds.tier?'<strong>사용 중</strong>':'<span></span>'}</li>`).join('');
   const items=stock.slice(page*pageSize,(page+1)*pageSize).map(item=>{
    const qty=s.finds.items[item.id];
    return `<li class="find-item">${tile(item)}<div><strong>${item.name}</strong><small>${item.rarityLabel} · ${fmt(item.value)} G / 개</small></div><b>×${fmt(qty)}</b>${shop?`<div class="find-sale-actions"><button type="button" data-do="finds-one" data-id="${item.id}">1개 판매</button>${qty>1?`<button type="button" data-do="finds-stack" data-id="${item.id}">${fmt(qty)}개 판매</button>`:''}</div>`:''}</li>`;
   }).join('');
   const kit=`<details class="find-details"><summary>발견 확률과 매입가</summary><p>낚시에 성공하면 빈 칸에 발견물 한 개를 넣어요. 발견물 한 개가 한 칸을 차지해요.</p><ul class="find-prices">${FIND_ITEMS.map(item=>`<li><span>${item.icon} ${item.name}</span><b>${chance(item.chance)}</b><span>${fmt(item.value)} G</span></li>`).join('')}</ul></details>`;
-  const upgrade=next?`<div class="find-upgrade"><div><strong>다음 가방 · ${fmt(next.capacity)}칸</strong><small>${s.debt>0?'미끼 외상을 먼저 갚아 주세요.':s.coins<next.price?`금화 ${fmt(next.price-s.coins)} G 부족`:'발견물은 새 가방으로 옮겨져요.'}</small></div><button type="button" data-do="finds-buy" ${s.debt>0||s.coins<next.price?'disabled':''}>구매<br>${fmt(next.price)} G</button></div>`:'<p class="notice">200칸 가방을 사용 중이에요.</p>';
+  const upgrade=next?`<div class="find-upgrade"><div><strong>${bagLabel(s.finds.tier+1)} · ${fmt(next.capacity)}칸</strong><small>${s.debt>0?'미끼 외상을 먼저 갚아 주세요.':s.coins<next.price?`금화 ${fmt(next.price-s.coins)} G 부족`:'발견물은 새 가방으로 옮겨져요.'}</small></div><button type="button" data-do="finds-buy" ${s.debt>0||s.coins<next.price?'disabled':''}>구매<br>${fmt(next.price)} G</button></div>`:`<p class="notice">${bagLabel(s.finds.tier)}을 사용 중이에요.</p>`;
   const manage=shop?`<button class="secondary" type="button" data-do="finds-junk" ${stock.some(item=>item.rarity==='junk')?'':'disabled'}>잡동사니 선택</button>`:'';
   const pager=pages>1?`<nav class="find-pager" aria-label="발견물 목록 페이지"><button type="button" data-do="finds-prev" ${page?'':'disabled'} aria-label="이전 페이지">‹</button><span>${page+1} / ${pages}</span><button type="button" data-do="finds-next" ${page+1<pages?'':'disabled'} aria-label="다음 페이지">›</button></nav>`:'';
-  show(shop?'발견물 상점':'발견물 가방',`<div class="find-heading">${bagIcon}<div><strong>${fmt(count)} / ${fmt(capacity)}칸</strong><span>${s.finds.tier+1}단계 가방${count>=capacity?' · 가득 참':''}</span></div></div><div class="find-tabs"><button type="button" data-do="finds-bag" aria-pressed="${!shop}">가방</button><button type="button" data-do="finds-shop" aria-pressed="${shop}">상점</button></div>${manage}${items?`<ul class="find-items">${items}</ul>${pager}`:'<p class="notice">아직 발견물이 없어요. 낚시에 성공하면 가방에 모여요.</p>'}${shop?upgrade:''}<details class="find-details"><summary>가방 10단계와 가격</summary><ul class="find-upgrades">${bags}</ul></details>${kit}`,'finds');
+  show(shop?'발견물 상점':'발견물 가방',`<div class="find-heading">${bagIcon}<div><strong>${fmt(count)} / ${fmt(capacity)}칸</strong><span>${bagLabel(s.finds.tier)}${count>=capacity?' · 가득 참':''}</span></div></div><div class="find-tabs"><button type="button" data-do="finds-bag" aria-pressed="${!shop}">가방</button><button type="button" data-do="finds-shop" aria-pressed="${shop}">상점</button></div>${manage}${items?`<ul class="find-items">${items}</ul>${pager}`:'<p class="notice">아직 발견물이 없어요. 낚시에 성공하면 가방에 모여요.</p>'}${shop?upgrade:''}<details class="find-details"><summary>가방 10단계와 가격</summary><ul class="find-upgrades">${bags}</ul></details>${kit}`,'finds');
  }
  function confirmSale(entries){
   const s=getState();

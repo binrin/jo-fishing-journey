@@ -17,9 +17,9 @@ export const FIND_ITEMS=Object.freeze([
 const itemsById=new Map(FIND_ITEMS.map(item=>[item.id,item]));
 
 export const FIND_BAGS=Object.freeze([
- [10,0],[20,120],[35,400],[50,1000],[70,2400],
- [90,5500],[115,12000],[140,26000],[170,58000],[200,130000],
-].map(([capacity,price])=>Object.freeze({capacity,price})));
+ [10,0],[20,10000],[35,50000],[50,180000],[70,500000],
+ [90,1200000],[115,2800000],[140,5500000],[170,10500000],[200,20000000,'명품가방'],
+].map(([capacity,price,name])=>Object.freeze(name?{capacity,price,name}:{capacity,price})));
 
 export const emptyFinds=()=>({tier:0,items:{}});
 export const findCapacity=s=>FIND_BAGS[s.finds.tier].capacity;

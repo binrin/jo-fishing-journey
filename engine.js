@@ -11,7 +11,7 @@ import {ACTIVE_SLOTS,DEFAULT_ACTIVE_SKILLS,SKILL_BY_ID,activeSkillFamily} from '
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,REP_MAX,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff,rewardBoosts,boostMultiplier} from './systems.js';
 import {normalizeNickname} from './nickname.js';
 import {awardFind,emptyFinds,restoreFindCounts,restoreFinds} from './finds.js';
-export const VERSION='4.3.0',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
+export const VERSION='4.3.1',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
 export const WATER_NET=Object.freeze({name:'물빛 어망',dropChance:.01,durationMs:30*60*1000,trophyBonus:.10,ornamentalChance:.04});
 const emptyWaterNet=()=>({count:0,startedAt:0,until:0});
 export function waterNetRemaining(s,now=Date.now()){

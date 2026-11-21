@@ -217,8 +217,9 @@
 .find-details{margin-top:9px;padding:8px 10px;border:1px solid #d2ddcb;border-radius:10px}
 .find-details summary{padding:3px 0;cursor:pointer;font-weight:700}
 .find-details p{font-size:12px;color:#496655;margin:6px 0}
-.find-upgrades li{display:grid;grid-template-columns:1fr .85fr 1.1fr .85fr;align-items:center;gap:4px;padding:3px 0;border-top:1px solid #dce3d4;font-size:12px;min-height:35px}
+.find-upgrades li{display:grid;grid-template-columns:minmax(0,1fr) max-content max-content 44px;align-items:center;gap:6px;padding:3px 0;border-top:1px solid #dce3d4;font-size:12px;min-height:35px}
 .find-upgrades strong{color:#266d54}
+.find-bag-price,.find-upgrade button{white-space:nowrap;font-variant-numeric:tabular-nums}
 .find-prices li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:5px 0;border-top:1px solid #dce3d4;font-size:12px}
 .find-quote,.find-result{margin:10px 0;padding:10px 12px;border:1px solid #b3cab8;border-radius:12px;background:#eef5eb}
 .find-quote li,.find-quote p{display:flex;justify-content:space-between;gap:6px;padding:5px 0}

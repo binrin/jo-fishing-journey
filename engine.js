@@ -10,7 +10,7 @@ import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,availableSP,catchXP,skillReq
 import {ACTIVE_SLOTS,DEFAULT_ACTIVE_SKILLS,SKILL_BY_ID,activeSkillFamily} from './progression.js';
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff,rewardBoosts,boostMultiplier} from './systems.js';
 import {normalizeNickname} from './nickname.js';
-export const VERSION='4.1.0',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
+export const VERSION='4.1.1',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
 export const WATER_NET=Object.freeze({name:'물빛 어망',dropChance:.01,durationMs:30*60*1000,trophyBonus:.10,ornamentalChance:.04});
 const emptyWaterNet=()=>({count:0,startedAt:0,until:0});
 export function waterNetRemaining(s,now=Date.now()){
@@ -19,16 +19,19 @@ export function waterNetRemaining(s,now=Date.now()){
 }
 export function activateWaterNet(s,now=Date.now()){
  const net=s.waterNet;
- if(!net||net.count<1||!Number.isSafeInteger(now)||now<0||!Number.isSafeInteger(now+WATER_NET.durationMs)||now<net.until)return false;
+ if(!net||net.count<1||s.bag.length>=capacity(s)||!Number.isSafeInteger(now)||now<0||!Number.isSafeInteger(now+WATER_NET.durationMs)||now<net.until)return false;
  net.count--;
  net.startedAt=now;
  net.until=now+WATER_NET.durationMs;
  return true;
 }
+export function endWaterNetIfFull(s,now=Date.now()){
+ if(s.bag.length>=capacity(s)&&waterNetRemaining(s,now))s.waterNet.until=now;
+}
 function restoreWaterNet(raw){
  const net=emptyWaterNet();
  if(Number.isSafeInteger(raw?.count)&&raw.count>=0)net.count=raw.count;
- if(Number.isSafeInteger(raw?.startedAt)&&raw.startedAt>=0&&Number.isSafeInteger(raw.until)&&raw.until-raw.startedAt===WATER_NET.durationMs){
+ if(Number.isSafeInteger(raw?.startedAt)&&raw.startedAt>=0&&Number.isSafeInteger(raw.until)&&raw.until>=raw.startedAt&&raw.until-raw.startedAt<=WATER_NET.durationMs){
   net.startedAt=raw.startedAt;
   net.until=raw.until;
  }

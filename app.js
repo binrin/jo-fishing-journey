@@ -164,7 +164,7 @@ function renderAuto(){
  btn.classList.toggle('active',on);
  ov.hidden=!(on&&view==='fish');
  if(!on)return;
- const mode=remaining?`물빛 어망 ${waterNetClock(remaining)} · 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))}`:`미끼 자동 구매 ${fmt(a.bought||0)}개 · 브라우저를 닫아도 계속돼요`;
+ const mode=remaining?`물빛 어망 ${waterNetClock(remaining)} · 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))}`:`자동 판매 중 · 미끼 자동 구매 ${fmt(a.bought||0)}개`;
  const key=JSON.stringify([autoCatchLine(a),a.xp,state.waterNet.count,!!remaining]);
  if(ov.dataset.renderKey===key){ov.querySelector('small').textContent=mode;return;}
  ov.dataset.renderKey=key;
@@ -401,9 +401,9 @@ function waterNetCard(){
  return `<section class="water-net-card" aria-label="물빛 어망">
   <img src="assets/moon-net.webp" alt="">
   <div><div class="water-net-title"><strong>${WATER_NET.name}</strong><span>보유 ${fmt(count)}개</span></div>
-  <p>사용 후 실제 시간 30분 동안 자동 낚시로 월척·관상어도 잡을 수 있어요. 잡은 물고기는 모두 선상 수족관에 보관해요.</p>
+  <p>사용 후 최대 30분 동안 월척·관상어도 잡고, 잡은 물고기는 모두 선상 수족관에 보관해요. 시간이 지나거나 수족관이 가득 차면 자동 판매로 돌아가요.</p>
   <p>직접 낚시에 성공하면 ${WATER_NET.dropChance*100}% 확률로 얻어요.</p>
-  <p id="waterNetTank">선상 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))} · ${full?'가득 찼어요. 물고기를 옮기거나 판매해 주세요.':'가득 차면 자동 낚시가 멈춰요'}</p>
+  <p id="waterNetTank">선상 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))} · ${full?'가득 찼어요. 어망을 쓰려면 물고기를 옮기거나 판매해 주세요.':'마지막 빈 칸까지 보관해요'}</p>
   <p id="waterNetRemaining" class="water-net-time" ${remaining?'':'hidden'}>${remaining?`남은 시간 ${waterNetClock(remaining)}`:''}</p>
   <button class="secondary" type="button" data-do="water-net-use" ${remaining||!count||full||phase!=='idle'||state.tournament?'disabled':''}>물빛 어망 사용</button></div>
  </section>`;
@@ -415,7 +415,7 @@ function refreshAutoPanel(){
  status.hidden=!remaining;
  status.textContent=remaining?`남은 시간 ${waterNetClock(remaining)}`:'';
  const tank=$('waterNetTank'),full=state.bag.length>=capacity(state);
- tank.textContent=`선상 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))} · ${full?'가득 찼어요. 물고기를 옮기거나 판매해 주세요.':'가득 차면 자동 낚시가 멈춰요'}`;
+ tank.textContent=`선상 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))} · ${full?'가득 찼어요. 어망을 쓰려면 물고기를 옮기거나 판매해 주세요.':'마지막 빈 칸까지 보관해요'}`;
  body.querySelector('[data-do="water-net-use"]').disabled=!!remaining||!state.waterNet.count||full||phase!=='idle'||!!state.tournament;
  const start=body.querySelector('[data-do="auto-start"]'),issue=$('autoStartIssue');
  if(start){
@@ -427,6 +427,7 @@ function refreshAutoPanel(){
  const stats=$('autoRunStats');
  if(stats){
   const a=state.auto,bid=a.bait||autoBait(state);
+  $('autoRunMode').textContent=remaining?'물빛 어망으로 보관 중':'자동 판매 중';
   stats.textContent=`${autoCatchLine(a)} · 경험치 +${fmt(a.xp)}`;
   $('autoBaitStats').textContent=`미끼 ${baitInfo(bid).name} ${fmt(state.baitStock[bid]||0)}개 남음 · 자동 구매 ${fmt(a.bought||0)}개(−${fmt(a.spent||0)} G)`;
  }
@@ -434,9 +435,9 @@ function refreshAutoPanel(){
 function openAuto(){
  const on=autoRunning(state),a=state.auto,bid=on?a.bait||autoBait(state):autoBait(state),bait=BAITS.find(x=>x.id===bid),left=state.baitStock[bid]||0,price=baitPrice(state,bid);
  const ar=autoRates(state,0),pct=v=>(v*100).toFixed(v<.1?1:0)+'%';
- const rules=`<details class="auto-rules"><summary>자동 낚시 규칙</summary><ul class="checklist"><li>이 낚시터의 일반 미끼를 먼저 쓰고, 떨어지면 금화로 1개씩 사요.</li><li>브라우저를 닫아도 진행되며 다시 열면 정산돼요. 미끼를 살 금화가 떨어지거나 멈추면 끝나요.</li><li>일반 자동 낚시는 잡은 물고기를 바로 판매해요. 현재 판매율 ${pct(ar.sale)} · 경험치 ${pct(ar.xp)} · 월척 확률 ${pct(ar.trophy)}.</li><li>물빛 어망 시간이 끝나면 일반 자동 낚시로 돌아가요. 보스는 직접 낚시로 만날 수 있어요.</li><li>장착한 공격 스킬 단계에 따라 전투 시간이 최대 8% 줄어요. 같은 계열에서는 높은 단계만 적용돼요.</li><li>자동 낚시 중에는 직접 낚시와 낚시터 이동이 잠겨요.</li></ul></details>`;
+ const rules=`<details class="auto-rules"><summary>자동 낚시 규칙</summary><ul class="checklist"><li>이 낚시터의 일반 미끼를 먼저 쓰고, 떨어지면 금화로 1개씩 사요.</li><li>브라우저를 닫아도 진행되며 다시 열면 정산돼요. 미끼를 살 금화가 떨어지거나 멈추면 끝나요.</li><li>일반 자동 낚시는 잡은 물고기를 바로 판매해요. 현재 판매율 ${pct(ar.sale)} · 경험치 ${pct(ar.xp)} · 월척 확률 ${pct(ar.trophy)}.</li><li>물빛 어망은 시간이 지나거나 마지막 빈 칸을 채우면 효과가 끝나요. 이후에 잡은 물고기부터 자동 판매해요. 보스는 직접 낚시로 만날 수 있어요.</li><li>장착한 공격 스킬 단계에 따라 전투 시간이 최대 8% 줄어요. 같은 계열에서는 높은 단계만 적용돼요.</li><li>자동 낚시 중에는 직접 낚시와 낚시터 이동이 잠겨요.</li></ul></details>`;
  if(on){
-  show('자동 낚시',`<div class="notice"><b>🤖 ${REGIONS[a.region].display||REGIONS[a.region].name}에서 자동 낚시 중</b><br><span id="autoRunStats">${autoCatchLine(a)} · 경험치 +${fmt(a.xp)}</span><br><span id="autoBaitStats">미끼 ${bait?.name||''} ${fmt(left)}개 남음 · 자동 구매 ${fmt(a.bought||0)}개(−${fmt(a.spent||0)} G)</span></div>${waterNetCard()}${view!=='fish'?'<button class="primary" data-do="auto-view">낚시터에서 보기</button>':''}<button class="danger-button" data-do="auto-stop">자동 낚시 멈추기</button>${rules}`,'auto');
+  show('자동 낚시',`<div class="notice"><b>🤖 ${REGIONS[a.region].display||REGIONS[a.region].name}에서 자동 낚시 중</b><br><span id="autoRunMode">${waterNetRemaining(state)?'물빛 어망으로 보관 중':'자동 판매 중'}</span><br><span id="autoRunStats">${autoCatchLine(a)} · 경험치 +${fmt(a.xp)}</span><br><span id="autoBaitStats">미끼 ${bait?.name||''} ${fmt(left)}개 남음 · 자동 구매 ${fmt(a.bought||0)}개(−${fmt(a.spent||0)} G)</span></div>${waterNetCard()}${view!=='fish'?'<button class="primary" data-do="auto-view">낚시터에서 보기</button>':''}<button class="danger-button" data-do="auto-stop">자동 낚시 멈추기</button>${rules}`,'auto');
   return;
  }
  const why=canStartAuto(state),isBusy=phase!=='idle'||state.tournament;
@@ -503,7 +504,7 @@ function handleV3(cmd,id,b){
    toast('선상 수족관이 가득 찼어요. 물고기를 옮기거나 판매해 주세요.');
    return true;
   }
-  if(activateWaterNet(state)){save();render();openAuto();toast('물빛 어망을 펼쳤어요. 지금부터 30분 동안 효과가 지속돼요.',3500);}
+  if(activateWaterNet(state)){save();render();openAuto();toast('물빛 어망을 펼쳤어요. 최대 30분 동안, 수족관이 찰 때까지 어획물을 보관해요.',3500);}
   else if(panel==='auto')refreshAutoPanel();
   return true;
  }

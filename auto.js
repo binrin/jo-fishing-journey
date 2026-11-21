@@ -3,7 +3,7 @@
 // Ordinary catches are sold on the spot. A water net stores catches and can lure ornamentals.
 import {raceMaterial} from './race.js';
 import {FISH} from './data.js';
-import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice,gainXP,capacity,addCatch,WATER_NET,waterNetRemaining} from './engine.js';
+import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice,gainXP,addCatch,WATER_NET,waterNetRemaining,endWaterNetIfFull} from './engine.js';
 import {catchXP,BAITS,playerLevel,activeSkillFamily} from './progression.js';
 import {luck,regionProfile,boostMultiplier,addRep} from './systems.js';
 // Auto fishing uses the basic (first-grade) bait of the spot's recommended family, buying one at a time
@@ -18,14 +18,13 @@ export function autoRates(s,now=Date.now()){const r=Math.max(0,Math.min(100,s.re
  return {sale:AUTO_SALE+AUTO_REP_BONUS*r,xp:AUTO_XP+AUTO_REP_BONUS*r,trophy:Math.min(AUTO_TROPHY_MAX,AUTO_TROPHY_MIN+L*AUTO_TROPHY_PER_LUCK)+bonus,luck:L};}
 
 export function autoRunning(s){return Boolean(s.auto&&s.auto.on);}
-export function canStartAuto(s,now=Date.now()){
+export function canStartAuto(s){
  if(autoRunning(s))return '이미 자동 낚시 중이에요.';
- if(waterNetRemaining(s,now)&&s.bag.length>=capacity(s))return '선박 보관함이 가득 찼어요.';
  const id=autoBait(s);if(!(s.baitStock[id]>0)&&(s.debt>0||s.coins<baitPrice(s,id)))return '일반 미끼를 살 금화가 없어요.';
  return '';
 }
 export function startAuto(s,now=Date.now()){
- if(canStartAuto(s,now))return false;
+ if(canStartAuto(s))return false;
  s.auto={on:true,since:now,last:now,acc:0,ran:0,next:null,region:s.region,bait:autoBait(s),caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,used:0,bought:0,spent:0,reason:'',seen:true};
  return true;
 }
@@ -65,8 +64,9 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
  a.acc+=(now-a.last)/1000;a.last=now;
  for(let guard=0;guard<100000;guard++){
   if(!a.next){
-   const castAt=now-a.acc*1000,net=waterNetRemaining(s,castAt)>0;
-   if(net&&s.bag.length>=capacity(s)){stopAuto(s,'full');a.ended=castAt;break;}
+   const castAt=Math.round(now-a.acc*1000);
+   endWaterNetIfFull(s,castAt);
+   const net=waterNetRemaining(s,castAt)>0;
    const id=a.bait??(a.bait=autoBait(s));
    if(!(s.baitStock[id]>0)){const price=baitPrice(s,id);if(!buyBait(s,id,1)){stopAuto(s,'money');a.ended=now-a.acc*1000;break;}a.bought=(a.bought||0)+1;a.spent=(a.spent||0)+price;got.bought++;got.spent+=price;}
    const prev=s.bait;s.bait=id;const pick=autoFish(s,rng,castAt,net);s.bait=prev;if(!pick){stopAuto(s,'empty');a.ended=castAt;break;}
@@ -85,9 +85,10 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
    const prev=s.bait;s.bait=a.bait;
    const item=addCatch(s,f,g,1,{autoXp:xp,now:caughtAt});
    s.bait=prev;
+   endWaterNetIfFull(s,Math.round(caughtAt));
    if(!item){
     a.missed++;got.missed++;
-    stopAuto(s,'full');a.ended=caughtAt;break;
+    continue;
    }
    a.kept=(a.kept||0)+1;got.kept++;
   }else{
@@ -96,7 +97,6 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
   }
   if(g===0){a.trophies=(a.trophies||0)+1;got.trophies++;}
   a.caught++;a.gold+=gold;a.xp+=xp;got.caught++;got.gold+=gold;got.xp+=xp;got.ids[f.id]=(got.ids[f.id]||0)+1;
-  if(net&&s.bag.length>=capacity(s)){stopAuto(s,'full');a.ended=caughtAt;break;}
  }
  return got;
 }

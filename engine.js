@@ -8,10 +8,11 @@ import {fishLength,restoreTournament} from './tournament.js';
 import {speciesFightFactor,speciesPriceFactor} from './species-traits.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,xpForLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS,boatPerks,LEGACY_BAIT,TROPHY_BAIT,FIGHT_SCALE} from './progression.js';
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff} from './systems.js';
-export const VERSION='3.4.0',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
+import {normalizeNickname} from './nickname.js';
+export const VERSION='3.5.0',TITLE='조선생의 낚시여행',SAVE_KEY='joseonsaeng-fishing-v1';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const LEVEL_HP=2,REPEAT_BOSS_CHANCE=.04;
-export const STARTER=()=>({schema:3,coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',trophyBait:0,pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:['strike','elastic','shock'],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
+export const STARTER=()=>({schema:3,nickname:'',coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',trophyBait:0,pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:['strike','elastic','shock'],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
 export const capacity=s=>BOATS[s.boat].capacity;
 export function levelBonuses(s){const gained=playerLevel(s)-1;return {hp:gained*LEVEL_HP,power:gained/100,tension:gained*.003};}
@@ -75,6 +76,7 @@ export function sell(s,ids,method='normal',rng=Math.random){const wanted=new Set
 function verifyFishArray(a,max){if(!Array.isArray(a)||a.length>max)throw Error('수족관 정보가 손상되었습니다.');return a.map(x=>{if(!x||!Number.isInteger(x.id)||!FISH[x.id]||![0,1,2].includes(x.grade)||!Number.isFinite(x.value)||x.value<0||!REGIONS[x.region]||typeof x.uid!=='string'||!Number.isFinite(x.size)||x.size<0)throw Error('물고기 정보가 손상되었습니다.');const weightKg=Number.isFinite(x.weightKg)&&x.weightKg>0?x.weightKg:fishWeight(FISH[x.id],x.grade);const pricePerKg=Number.isFinite(x.pricePerKg)&&x.pricePerKg>0?x.pricePerKg:x.value/weightKg;return {...x,weightKg,pricePerKg,boss:FISH[x.id].boss};});}
 export function validateSave(raw){
  if(!raw||![1,2,3].includes(raw.schema))throw Error('지원하지 않는 저장 파일입니다.');const s=STARTER();
+ s.nickname=normalizeNickname(raw.nickname);
  for(const k of ['coins','debt','region','unlocked','fame','caught','attempts','seconds','dayOffset']){if(!Number.isFinite(raw[k])||raw[k]<0)throw Error('저장값이 손상되었습니다.');s[k]=raw[k];}if(!Number.isInteger(s.region)||!Number.isInteger(s.unlocked)||s.region>s.unlocked||s.unlocked>=REGIONS.length)throw Error('잘못된 지역 정보입니다.');
  for(const k of ['counts','pity']){if(!Array.isArray(raw[k])||![10,REGIONS.length].includes(raw[k].length)||raw[k].some(n=>!Number.isInteger(n)||n<0))throw Error('성장 정보가 손상되었습니다.');s[k]=Array.from({length:REGIONS.length},(_,i)=>raw[k][i]||0);}
  s.bag=verifyFishArray(raw.bag,BOATS.at(-1).capacity);for(const k of ['collection','records']){if(!raw[k]||typeof raw[k]!=='object'||Array.isArray(raw[k]))throw Error('도감 정보가 손상되었습니다.');for(const [id,n]of Object.entries(raw[k]))if(FISH[id]&&Number.isFinite(n)&&n>=0)s[k][id]=n;}

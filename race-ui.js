@@ -1,3 +1,4 @@
+import {escapeRankingName} from './nickname.js';
 import {BOATS} from './progression.js';
 import {boatArt} from './panels.js';
 import {createRaceScene} from './race-scene.js';
@@ -141,11 +142,11 @@ function resultHTML(r,result){
  const podium=[order[1],order[0],order[2]],net=prize-LEAGUES[r.tier].fee;
  return `<section class="race-paddock race-results">
  <header class="race-finish"><div class="race-finish-title"><p>${LEAGUES[r.tier].name} 리그 · ${r.course.name}</p><h2>${timedOut?'시간 초과':rank===1?'우승':rank+'위 완주'}</h2>${timedOut?'':`<span>${time(r.player.finish)}</span>`}</div>
- <div class="race-podium" aria-label="상위 세 팀">${podium.map((team,i)=>`<div class="race-podium-${i} ${team===r.player?'race-podium-player':''}"><span class="race-podium-rank">${[2,1,3][i]}위</span><b>${team.name}</b><small>${time(team.finish)}</small></div>`).join('')}</div></header>
+ <div class="race-podium" aria-label="상위 세 팀">${podium.map((team,i)=>`<div class="race-podium-${i} ${team===r.player?'race-podium-player':''}"><span class="race-podium-rank">${[2,1,3][i]}위</span><b>${escapeRankingName(team.name)}</b><small>${time(team.finish)}</small></div>`).join('')}</div></header>
  <dl class="race-stat-grid race-payout">${ledger('상금',fmt(prize)+' G')}${ledger('순수익',net===0?'0 G':signed(net,' G'))}${ledger('월척 미끼',bait?'+'+bait+'개':'0개')}</dl>
  ${unlocked?`<p class="race-unlocked">${LEAGUES[r.tier+1].name} 리그가 열렸어요!</p>`:''}
  <div class="race-menu">${button('대회 목록','race')}${button('다시 도전','race-confirm',r.tier,false,'primary')}</div>
- <details class="race-disclosure"><summary>전체 순위 · ${order.length}팀</summary><ol class="race-table">${order.map(team=>`<li class="${team===r.player?'race-your-team':''}"><span>${team.name}</span><small>${team.finish==null?'미완주':time(team.finish)}</small></li>`).join('')}</ol></details>
+ <details class="race-disclosure"><summary>전체 순위 · ${order.length}팀</summary><ol class="race-table">${order.map(team=>`<li class="${team===r.player?'race-your-team':''}"><span>${escapeRankingName(team.name)}</span><small>${team.finish==null?'미완주':time(team.finish)}</small></li>`).join('')}</ol></details>
  </section>`;
 }
 

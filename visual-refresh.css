@@ -1,4 +1,22 @@
 /* Natural tackle, touch-only fighting and light, legible controls. */
+#playerBadge{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nickname-intro{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.nickname-intro img{flex:0 0 auto}
+.nickname-intro p{margin:0}
+.nickname-form label{display:block;font-weight:700;margin-bottom:5px}
+.nickname-form input{display:block;width:100%;padding:10px 12px;margin-bottom:6px;border:1px solid #bad0c1;border-radius:10px;background:#fffdf4;color:var(--ink);font:inherit;font-size:16px}
+.nickname-form input:focus-visible{outline:2px solid #358a75;outline-offset:2px}
+.nickname-form input[aria-invalid="true"]{border-color:#b65235}
+.nickname-form .nickname-error{color:#9a482e;font-size:13px}
+.nickname-form button:last-child{margin-bottom:0}
+.nickname-setting>div{min-width:0}
+.nickname-setting span{margin-left:8px;overflow-wrap:anywhere}
+.nickname-setting button{flex-shrink:0;margin-left:8px}
+#modal:has(.nickname-form) .modal-head{padding-block:12px}
+#modal:has(.nickname-form) .modal-head h2{font-size:20px}
+#modal:has(.nickname-form) #modalTitle:focus{outline:none}
+.race-podium>div,.tournament-podium>div{min-width:0}
+.race-podium b,.race-table li span,.tournament-podium strong,.tournament-ranking li{overflow-wrap:anywhere}
 .bobber{width:20px;height:60px;transform:translate(-50%,-78%);animation:float-rock 2.6s ease-in-out infinite;filter:drop-shadow(0 1px 1px #ffffffb0);pointer-events:none}
 .bobber img{display:block;width:100%;height:100%;object-fit:contain}
 .casting-mode .bobber:after{left:-10px;top:78%;width:38px;height:9px;border:1px solid #eaffff;box-shadow:0 0 0 2px #3b9daf44}

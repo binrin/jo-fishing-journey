@@ -1,3 +1,4 @@
+import {escapeRankingName,normalizeNickname} from './nickname.js';
 import {FISH,REGIONS} from './data.js';
 import {typicalLength} from './species-traits.js';
 import {BOATS,REGION_LEVELS,playerLevel} from './progression.js';
@@ -93,7 +94,7 @@ export function finishTournament(s,credit){
  if(!entry||entry.casts.length<TOURNAMENT_CASTS)return null;
  const latest=TOURNAMENTS[entry.id],legacyFee=legacyFees[entry.id];
  const event=entry.entryFee===latest.fee?latest:{...latest,fee:legacyFee,payouts:[9,5,2].map(multiplier=>legacyFee*multiplier)};
- const ranking=[...entry.bots,{name:'나',size:Math.max(...entry.casts),player:true}].sort((a,b)=>b.size-a.size);
+ const ranking=[...entry.bots,{name:normalizeNickname(s.nickname)||'나',size:Math.max(...entry.casts),player:true}].sort((a,b)=>b.size-a.size);
  const place=1+ranking.findIndex(row=>row.player);
  const payout=ranking[place-1].size>0?(event.payouts[place-1]||0):0;
  const bait=payout&&place===1?event.bait:0;
@@ -150,9 +151,9 @@ export function tournamentPanel(s){
 export function tournamentResults({event,ranking,place,payout,bait}){
  const size=row=>row.size?`${row.size} cm`:'기록 없음';
  return `<div class="catch-heading"><h3>${regionName(event.id)} 낚시대회</h3><p>${ranking[place-1].size?`${ranking.length}명 중 ${place}위 · ${size(ranking[place-1])}`:'세 번의 낚시에서 포획 기록이 없어요.'}</p></div>
- <div class="tournament-podium" aria-label="상위 세 명">${ranking.slice(0,3).map((row,i)=>`<div class="podium-${i+1}${row.player?' my-place':''}"><span>${['🥇','🥈','🥉'][i]}</span><strong>${row.name}</strong><small>${size(row)}</small></div>`).join('')}</div>
+ <div class="tournament-podium" aria-label="상위 세 명">${ranking.slice(0,3).map((row,i)=>`<div class="podium-${i+1}${row.player?' my-place':''}"><span>${['🥇','🥈','🥉'][i]}</span><strong>${escapeRankingName(row.name)}</strong><small>${size(row)}</small></div>`).join('')}</div>
  ${payout?`<p class="notice">상금 <b>${number(payout)} G</b>${bait?` · 월척미끼 <b>${bait}개</b>`:''}</p>`:''}
- <details><summary>전체 순위</summary><ol class="tournament-ranking">${ranking.map(row=>`<li${row.player?' class="my-place"':''}>${row.name} · ${size(row)}</li>`).join('')}</ol></details>
+ <details><summary>전체 순위</summary><ol class="tournament-ranking">${ranking.map(row=>`<li${row.player?' class="my-place"':''}>${escapeRankingName(row.name)} · ${size(row)}</li>`).join('')}</ol></details>
  <button class="primary" data-do="close">확인</button>`;
 }
 

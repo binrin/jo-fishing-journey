@@ -48,6 +48,7 @@ export const BAITS=[...BAIT_FAMILIES.flatMap(f=>BAIT_TIERS.map(t=>({id:f.id+t.ti
  description:`대형 ${Math.round(t.grades[0]*100)}% · 중형 ${Math.round(t.grades[1]*100)}% · 소형 ${Math.round(t.grades[2]*100)}%${t.tier===4?' · 관상어 입질 4%(60번째 보장)':''} · 잘 맞는 어종: ${f.fits}`}))),
  {id:'chain',family:'chain',tier:0,name:'먹이사슬 채비',icon:'🐟',img:2,level:1,factor:1.2,description:'보관한 먹잇감 한 마리를 사용하면 해당 어종의 대형을 노려요.'}];
 export const LEGACY_BAIT={basic:'worm1',golden:'worm4',shrimp:'shrimp2',glow:'glow2',spinner:'lure3',squid:'squid3',pearl:'glow4',chain:'chain'};
+export const TROPHY_BAIT={id:'trophy',name:'월척확정 미끼',icon:'🏆',img:2,tier:0,level:1,description:'대형 물고기가 입질해요. 실제로 잡았을 때만 한 개를 써요.'};
 extendProgression(BOATS,TACKLE,HOMES,SKILLS,BAITS,STAGE_BUDGETS,TARGET_CATCHES);
 // v2.8: boats now speed up bites and ease line tension, so boat and tackle prices are scaled
 // to keep the normal-profile journey at ~350h (measured with tools/simulate_expansion.mjs).

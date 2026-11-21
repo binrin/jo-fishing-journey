@@ -1,9 +1,10 @@
 // Auto fishing: runs on the wall clock until the current bait runs out, so it keeps going while the
 // tab is hidden or the browser is closed (progress is settled when the game is opened again).
-// Only ordinary fish bite (no trophies, bosses or ornamentals); every catch is sold on the spot
+// Only ordinary species bite (including their trophy sizes); every catch is sold on the spot
 // for 25% of its price and gives 25% of its experience.
+import {raceMaterial} from './race.js';
 import {FISH} from './data.js';
-import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice} from './engine.js';
+import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice,gainXP} from './engine.js';
 import {catchXP,BAITS,playerLevel} from './progression.js';
 import {luck,regionProfile} from './systems.js';
 // Auto fishing uses the basic (first-grade) bait of the spot's recommended family, buying one at a time
@@ -31,9 +32,9 @@ export function stopAuto(s,reason='stop'){if(!s.auto)return null;s.auto.on=false
 // A run that ended by itself (bait ran out) whose result the player has not seen yet.
 export function unseenAutoResult(s){return Boolean(s.auto&&!s.auto.on&&s.auto.seen===false);}
 
-// An ordinary fish for auto fishing: re-roll ornamentals, never a trophy-size grade.
+// An ordinary species for auto fishing, with the trophy roll determined by luck.
 function ordinaryFish(s,rng){
- let f=null;for(let i=0;i<6&&(!f||f.ornamental||f.boss);i++)f=chooseFish(s,rng);
+ let f=null;for(let i=0;i<6&&(!f||f.ornamental||f.boss);i++)f=chooseFish(s,rng,false,{includeRepeatBosses:false});
  if(!f||f.ornamental||f.boss){const pool=FISH.filter(x=>x.regions.includes(s.region)&&!x.boss&&!x.ornamental);f=pool[Math.floor(rng()*pool.length)];}
  if(!f)return null;
  let g=fishGrade(f,rng,false,s);if(g===0)g=f.hp[1]>0?1:2;if(!(f.hp[g]>0))g=[2,1].find(i=>f.hp[i]>0)??g;
@@ -52,7 +53,7 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
  a.acc+=Math.max(0,(now-a.last)/1000);a.last=now;
  for(let guard=0;guard<100000;guard++){
   if(!a.next){
-   const id=a.bait||autoBait(s);
+   const id=a.bait??(a.bait=autoBait(s));
    if(!(s.baitStock[id]>0)){const price=baitPrice(s,id);if(!buyBait(s,id,1)){stopAuto(s,'money');a.ended=now-a.acc*1000;break;}a.bought=(a.bought||0)+1;a.spent=(a.spent||0)+price;got.bought++;got.spent+=price;}
    const prev=s.bait;s.bait=id;const pick=ordinaryFish(s,rng);s.bait=prev;if(!pick){stopAuto(s,'empty');a.ended=now-a.acc*1000;break;}
    s.baitStock[id]--;a.used++;got.used++;
@@ -60,9 +61,9 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
   }
   if(a.acc<a.next.dur)break;
   a.acc-=a.next.dur;a.ran=(a.ran||0)+a.next.dur;const f=FISH[a.next.id],g=a.next.g;a.next=null;
-  if(rng()>AUTO_SUCCESS){a.missed++;got.missed++;continue;}
+  if(!f||f.boss||f.ornamental||rng()>AUTO_SUCCESS){a.missed++;got.missed++;continue;}
   const rate=autoRates(s),gold=Math.max(1,Math.round(quote(s,f,g)*rate.sale)),xp=Math.max(1,Math.round(catchXP(s.region,f,g)*rate.xp));if(g===0){a.trophies=(a.trophies||0)+1;got.trophies++;}
-  credit(s,gold);s.xp+=xp;s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;
+  credit(s,gold);gainXP(s,xp);s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;raceMaterial(s,f,g,a.region,true);
   a.caught++;a.gold+=gold;a.xp+=xp;got.caught++;got.gold+=gold;got.xp+=xp;got.ids[f.id]=(got.ids[f.id]||0)+1;
  }
  return got;

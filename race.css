@@ -1,0 +1,53 @@
+.race-banner{min-height:9rem;border-radius:16px;background:linear-gradient(0deg,#092f40e6,transparent),#0b6179 url(assets/race-water.webp) center 46%/cover;display:flex;align-items:end;color:#fff;padding:14px}
+.race-banner h2,.race-showcase h3,.race-part h3,.race-league h3,.race-entry h3{margin:0}
+.race-banner p,.race-part p,.race-league p,.race-showcase p{margin:6px 0}
+.race-current{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px 11px;margin:11px 0;padding:10px;color:#143a40;background:#e5f6f3;border-radius:12px;font-size:.87rem}
+.race-menu,.race-actions{display:flex;gap:7px;margin:8px 0}
+.race-menu>button,.race-actions>button{flex:1;min-width:0;width:auto;margin:0;min-height:44px}
+.race-tip,.race-keyboard{font-size:.79rem;color:#365c62}
+.race-leagues,.race-results{display:grid;gap:10px}
+.race-league,.race-part{padding:12px;border-radius:14px;border:1px solid #b4dbe0;background:#f6fcfc}
+.race-league header,.race-part header,.race-showcase{display:flex;align-items:center;gap:9px}
+.race-league header{justify-content:space-between;color:#114753}
+.race-league header b,.race-active{font-size:.74rem;color:#23626c}
+.race-league>small,.race-part header small,.race-showcase small{font-size:.75rem;color:#42646a}
+.race-recommend{font-size:.82rem;background:#e1f4f3;padding:7px;border-radius:8px;color:#294f56}
+.race-chooser{display:flex;gap:6px;overflow-x:auto;padding:4px 0 7px}
+.race-chooser button{flex:none;width:auto;margin:0;padding:8px 10px;min-height:38px}
+.race-showcase{padding:11px;margin:8px 0;border-radius:14px;background:#e5f6f3;color:#143a40}
+.race-showcase img{width:33%;aspect-ratio:1;object-fit:contain}
+.race-part{margin:9px 0}
+.race-part header img{width:42px;height:42px;object-fit:contain}
+.race-active{margin-left:auto}
+.race-actions>button{font-size:.8rem;padding:5px}
+.race-entry{text-align:center}
+.race-entry .boat-art{max-width:180px;margin:5px auto 12px}
+.race-live{color:#effcfc;background:#103c4a;border-radius:12px;padding:7px;display:grid;gap:6px}
+.race-instruments,.race-meters{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.8rem}
+.race-instruments{padding:2px 6px}
+.race-instruments .race-slow{color:#ffaf95}
+.race-meters label{display:flex;align-items:center;gap:5px;flex:1;min-width:0;white-space:nowrap}
+.race-meters progress{width:100%;min-width:0;height:8px;accent-color:#a9efca}
+.race-viewport{position:relative;overflow:hidden;background:#075c70 url(assets/race-surface.webp) center/cover;border-radius:8px}
+.race-viewport canvas{display:block;width:100%;height:min(46dvh,460px)}
+.race-cue{pointer-events:none;position:absolute;top:16%;left:50%;transform:translateX(-50%);padding:5px 11px;color:#fff9d3;background:#10313bdb;border-radius:10px;font-weight:bold;white-space:nowrap}
+.race-controls{display:flex;justify-content:space-between;gap:7px;touch-action:none;user-select:none}
+.race-controls>div{display:flex;gap:4px}
+.race-controls button{margin:0;min-height:50px;min-width:42px;width:auto;padding:7px;border:1px solid #479aad;border-radius:8px;background:#154f62;color:white;font-size:.77rem;touch-action:none}
+.race-controls [data-drive="throttle"]{background:#e2ffd6;color:#143d28;min-width:49px}
+.race-controls [data-drive="boost"]{background:#6bdbec;color:#113443}
+.race-controls [data-drive="brake"]{background:#ffddc6;color:#572c1d}
+.race-controls button.pressed{background:#ffdf5b;color:#28353b;box-shadow:inset 0 0 0 2px #dc8f3a}
+.race-keyboard{color:#d3f4ee;margin:0;text-align:center}
+.race-podium{display:flex;align-items:end;justify-content:center;gap:6px;padding:10px;background:#e0f4f5;border-radius:14px}
+.race-podium div{flex:1;border-radius:9px 9px 4px 4px;min-height:76px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:5px;text-align:center;background:#c8dce5;color:#153a45}
+.race-podium span{font-size:1.8rem}
+.race-podium .race-podium-1{min-height:106px;background:#ffe19d}
+.race-podium .race-podium-2{min-height:65px;background:#ebc4a8}
+.race-payout,.race-unlocked{text-align:center;margin:0;padding:7px;background:#e8f7f2;border-radius:8px;color:#16464c}
+.race-table{padding-left:27px;margin:0;color:#23484a}
+.race-table li{border-bottom:1px solid #d8eded;padding:4px 5px}
+.race-table li small{float:right;color:#35666c}
+.race-your-team{font-weight:bold;background:#fff1be}
+#game .race-map-marker span{background:#104b5f;color:#f8fffd;border-color:#92e9dc}
+#game .race-map-marker small{background:#dbfff4;color:#234d57;border-color:#92cfc8}

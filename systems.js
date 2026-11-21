@@ -1,6 +1,6 @@
 // v3.0 gameplay systems: bait matching, food buffs, reputation, luck and haggling.
 import {FISH,REGIONS} from './data.js';
-import {BOATS,BAITS,BAIT_FAMILIES,BAIT_TIERS,playerLevel} from './progression.js';
+import {BOATS,BAITS,BAIT_FAMILIES,BAIT_TIERS,TROPHY_BAIT,playerLevel} from './progression.js';
 import {HABITAT,HABITAT_NAME} from './fish-additions.js';
 export {HABITAT,HABITAT_NAME};
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -19,7 +19,7 @@ export function baitFamilyOf(f){
  return DEFAULT_FAMILY[h];
 }
 export const familyInfo=id=>BAIT_FAMILIES.find(f=>f.id===id)||{id,name:'먹이사슬 채비',icon:'🐟',fits:''};
-export const baitInfo=id=>BAITS.find(b=>b.id===id)||BAITS[0];
+export const baitInfo=id=>id===TROPHY_BAIT.id?TROPHY_BAIT:BAITS.find(b=>b.id===id)||BAITS[0];
 const meanHP=f=>mean(f.hp.filter(v=>v>0));
 const regionCache=new Map();
 export function regionProfile(regionId){
@@ -35,7 +35,7 @@ export const isBigSpecies=(f,regionId)=>regionProfile(regionId).big.has(f.id);
 // Catch weight multiplier from bait: the matching family attracts the species; the two biggest
 // species of a spot mostly ignore the wrong bait.
 export function baitWeight(f,s){
- const b=baitInfo(s.bait);if(!b||b.family==='chain'||f.ornamental)return 1;
+ const b=baitInfo(s.bait);if(!b.family||b.family==='chain'||f.ornamental)return 1;
  const match=baitFamilyOf(f)===b.family,big=isBigSpecies(f,s.region);
  return big?(match?1.6:.35):(match?1.8:1);
 }

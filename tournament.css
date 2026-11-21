@@ -1,0 +1,70 @@
+.tournament-notice {
+  width: 100%;
+  margin-block: 0 12px;
+  text-align: left;
+}
+.tournament-notice strong, .tournament-notice small { display: block; }
+.tournament-notice small { margin-top: 4px; font-weight: normal; }
+.tournament-schedule { display: grid; gap: 10px; }
+.tournament-event {
+  padding: 12px;
+  background: #f6fbfa;
+  border: 1px solid #d3e5df;
+  border-radius: 12px;
+}
+.tournament-event > div { display: flex; justify-content: space-between; gap: 8px; }
+.tournament-event > div span { white-space: nowrap; }
+.tournament-event p { margin: 7px 0; }
+.tournament-event button { margin-bottom: 0; }
+.tournament-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 6px;
+  margin-block: 16px;
+}
+.tournament-podium > div {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 82px;
+  padding: 6px 3px;
+  border-radius: 10px 10px 4px 4px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.tournament-podium > div span { font-size: 24px; }
+.tournament-podium .podium-1 { order: 2; min-height: 120px; background: #f9e6a7; }
+.tournament-podium .podium-2 { order: 1; min-height: 98px; background: #dce7ed; }
+.tournament-podium .podium-3 { order: 3; background: #f0d4bd; }
+.tournament-podium .my-place { outline: 2px solid #1f766d; outline-offset: -2px; }
+.tournament-ranking .my-place { color: #15594d; font-weight: bold; }
+.k-tournament { --cb-ms: 2.4s; }
+.k-tournament .cb-p {
+  top: 18%;
+  width: 8px;
+  height: 13px;
+  border-radius: 2px;
+  background: hsl(var(--h) 85% 61%);
+  animation-duration: 1.8s;
+}
+.tournament-floats { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.tournament-floats i {
+  position: absolute;
+  width: clamp(8px, 2.4vw, 15px);
+  height: clamp(16px, 4.7vw, 29px);
+  background: center / contain no-repeat url(assets/float.svg);
+  animation: tournament-cast .65s both ease-out;
+  opacity: .85;
+  filter: drop-shadow(0 2px 2px #00394380);
+}
+@keyframes tournament-cast {
+  0% { opacity: 0; transform: translate(var(--start), 22vh) rotate(50deg); }
+  46% { opacity: 1; transform: translate(calc(var(--start) * .45), -11vh) rotate(-22deg); }
+  82% { transform: translateY(1vh); }
+  100% { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tournament-floats i { animation: none; }
+}

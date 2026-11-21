@@ -8,7 +8,8 @@ const KINDS={
  newgear:{ms:2000,particles:14,chars:['✨','✦','✧'],spread:[180,240],rays:true,sweep:true},
  home:{ms:2100,particles:30,chars:['','',''],spread:[180,60],confetti:true},
  skill:{ms:1900,particles:14,chars:['✦','✧','⋆'],spread:[160,220],rune:true},
- boat:{ms:2000,particles:20,chars:['','',''],spread:[190,160],bubble:true,wave:true}
+ boat:{ms:2000,particles:20,chars:['','',''],spread:[190,160],bubble:true,wave:true},
+ tournament:{ms:2400,particles:36,chars:['','',''],spread:[190,180],confetti:true,rays:true}
 };
 export function celebrate(kind,{icon='✨',title='',sub=''}={}){
  const k=KINDS[kind]||KINDS.newgear,reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

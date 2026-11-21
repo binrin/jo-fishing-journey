@@ -21,3 +21,9 @@
 #game.tension-critical .tension .bar{outline:2px solid #df375e;outline-offset:1px}
 @media(max-height:700px){#game.battle-mode{grid-template-rows:46px 32px minmax(110px,1fr) 76px 34px 24px}.battle-mode #scene>.controls{height:91px;padding-right:9px}.battle-mode .reel-status{width:90px;font-size:11px;left:6px;bottom:12px}#game .instruments{padding:4px 10px}#game .meter-row label{font-size:12px}#game .meter-row b,#game .tension>b{font-size:14px;line-height:18px}#game .instruments .bar{height:12px}}
 @media(max-height:700px){#game:not(.town-view):not(.battle-mode){grid-template-rows:46px 32px minmax(90px,1fr) 26px 76px 32px 22px 70px 45px}}
+.shore-glints{position:absolute;pointer-events:none;inset:43% 0 2%;overflow:hidden;opacity:.65;mask-image:radial-gradient(ellipse at var(--glint-x,50%) 55%,black,transparent 74%)}
+.shore-glints::before,.shore-glints::after{content:"";position:absolute;inset:-8%;background:url(assets/water-glints.svg) repeat;background-size:var(--glint-size,180px) auto;animation:shoreShimmer var(--glint-pace,5s) ease-in-out infinite alternate}
+.shore-glints::after{background-position:37px 19px;animation-direction:alternate-reverse}
+.night .shore-glints{opacity:.26}
+@keyframes shoreShimmer{from{transform:translate(-3px,1px) scaleY(.98);opacity:.28}to{transform:translate(4px,-1px) scaleY(1.025);opacity:.86}}
+@media(prefers-reduced-motion:reduce){.shore-glints::before,.shore-glints::after{animation:none;opacity:.46}}

@@ -10,10 +10,33 @@ import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,availableSP,catchXP,skillReq
 import {ACTIVE_SLOTS,DEFAULT_ACTIVE_SKILLS,SKILL_BY_ID,activeSkillFamily} from './progression.js';
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff,rewardBoosts,boostMultiplier} from './systems.js';
 import {normalizeNickname} from './nickname.js';
-export const VERSION='4.0.1',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
+export const VERSION='4.1.0',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
+export const WATER_NET=Object.freeze({name:'물빛 어망',dropChance:.01,durationMs:30*60*1000,trophyBonus:.10,ornamentalChance:.04});
+const emptyWaterNet=()=>({count:0,startedAt:0,until:0});
+export function waterNetRemaining(s,now=Date.now()){
+ const net=s.waterNet;
+ return net&&net.startedAt<=now&&now<net.until?net.until-now:0;
+}
+export function activateWaterNet(s,now=Date.now()){
+ const net=s.waterNet;
+ if(!net||net.count<1||!Number.isSafeInteger(now)||now<0||!Number.isSafeInteger(now+WATER_NET.durationMs)||now<net.until)return false;
+ net.count--;
+ net.startedAt=now;
+ net.until=now+WATER_NET.durationMs;
+ return true;
+}
+function restoreWaterNet(raw){
+ const net=emptyWaterNet();
+ if(Number.isSafeInteger(raw?.count)&&raw.count>=0)net.count=raw.count;
+ if(Number.isSafeInteger(raw?.startedAt)&&raw.startedAt>=0&&Number.isSafeInteger(raw.until)&&raw.until-raw.startedAt===WATER_NET.durationMs){
+  net.startedAt=raw.startedAt;
+  net.until=raw.until;
+ }
+ return net;
+}
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const LEVEL_HP=2,REPEAT_BOSS_CHANCE=.04;
-export const STARTER=()=>({schema:4,generation:SAVE_GENERATION,resetNotice:false,rewardBoosts:rewardBoosts(),nickname:'',coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',trophyBait:0,pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:[...DEFAULT_ACTIVE_SKILLS],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
+export const STARTER=()=>({schema:4,generation:SAVE_GENERATION,resetNotice:false,rewardBoosts:rewardBoosts(),waterNet:emptyWaterNet(),nickname:'',coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',trophyBait:0,pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:[...DEFAULT_ACTIVE_SKILLS],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
 export const capacity=s=>BOATS[s.boat].capacity;
 export function levelBonuses(s){const gained=playerLevel(s)-1;return {hp:gained*LEVEL_HP,power:gained/100,tension:gained*.003};}
@@ -61,13 +84,18 @@ export function upgradeHome(s){const h=HOMES[s.home+1];if(!h||playerLevel(s)<h.l
 export function transferFish(s,uid,toHome){const from=toHome?s.bag:s.homeFish,to=toHome?s.homeFish:s.bag,max=toHome?HOMES[s.home].capacity:capacity(s);const i=from.findIndex(x=>x.uid===uid);if(i<0||to.length>=max)return false;to.push(from.splice(i,1)[0]);return true;}
 export function learnSkill(s,id){const k=SKILL_BY_ID[id],rank=s.skills[id]||0;if(!k||rank>=k.max||k.requires&&s.skills[k.requires]!==SKILL_BY_ID[k.requires].max||playerLevel(s)<skillRequiredLevel(k,rank)||availableSP(s)<k.costs[rank])return false;s.skills[id]=rank+1;return true;}
 export function equipSkill(s,id,slot){if(!ACTIVE_SLOTS.includes(slot)||!s.skills[id]||SKILL_BY_ID[id]?.type!=='active')return false;const old=s.equippedSkills.indexOf(id);if(old>=0)[s.equippedSkills[old],s.equippedSkills[slot]]=[s.equippedSkills[slot],s.equippedSkills[old]];else s.equippedSkills[slot]=id;return true;}
-export function chooseFish(s,rng=Math.random,boss=false,{includeRepeatBosses=true}={}){
+export function chooseFish(s,rng=Math.random,boss=false,{includeRepeatBosses=true,waterNet=false}={}){
  const r=region(s);if(s.region>BOATS[s.boat].region)return null;
  if(boss){if(r.bossId==null||s.bosses.includes(r.bossId)||s.tackle<s.region||s.tackle===s.region&&s.tackleUpgrade<2||s.counts[s.region]<r.minimum_catches)return null;const f=FISH[r.bossId];if(f.legendary&&!legendReady(s))return null;return activityWeight(f,s)<=0?null:f;}
  let pool=availableFish(s.region,s);
  if(s.bait===TROPHY_BAIT.id)return baitWeightedFish(pool.filter(f=>!f.ornamental&&f.hp[0]>0),s,rng);
  const repeat=includeRepeatBosses&&s.bosses.includes(r.bossId)?FISH[r.bossId]:null;
  if(repeat){const chance=REPEAT_BOSS_CHANCE*activityWeight(repeat,s);if(chance>0&&rng()<chance)return repeat;}
+ // The net can catch local ornamentals without spending a manual golden bait pity roll.
+ if(waterNet){
+  const rare=pool.filter(f=>f.ornamental);
+  if(rare.length&&rng()<WATER_NET.ornamentalChance)return weightedFish(rare,s,rng);
+ }
  // Golden-grade bait of any family can tempt ornamental fish (4%, guaranteed on the 60th try).
  if(baitInfo(s.bait).tier===4){const rare=pool.filter(f=>f.ornamental);if(rare.length){s.pity[s.region]++;if(s.pity[s.region]>=60||rng()<.04){s.pity[s.region]=0;return weightedFish(rare,s,rng);}}}
  pool=pool.filter(f=>!f.ornamental);return baitWeightedFish(pool,s,rng);
@@ -81,7 +109,42 @@ export function quote(s,f,g){if(f.boss)return Math.round(region(s).boss_reward*(
  // Real-value species factor (spot average 1) x the grade's share of the species' own price list.
  const m=f.ornamental?clamp(own/avg,.45,2.1):speciesPriceFactor(f,s.region)*own/(valid.reduce((a,b)=>a+b,0)/valid.length);
  return Math.max(1,Math.round(region(s).value*m*(1+(s.skills.economy||0)*.03)*SALE_BOOST));}
-export function addCatch(s,f,g,quality=1,{trophyBait=false}={}){if(s.bag.length>=capacity(s)||trophyBait&&(!(s.trophyBait>0)||f.boss||f.ornamental||g!==0||f.hp[0]<=0||!f.regions.includes(s.region)))return null;if(!f.boss)quality*=baitQuality(s);const entry={uid:Date.now().toString(36)+Math.random().toString(36).slice(2,9),id:f.id,grade:g,xp:Math.round(catchXP(s.region,f,g)*(1+(s.skills.lore||0)*.05)*(1+(mealBuff(s).xp||0)))*boostMultiplier(s,'xp'),region:s.region,boss:f.boss,size:fishLength(f,g,quality)};entry.weightKg=fishWeight(f,g,quality);const standard=[1,2,0].find(i=>f.prices[i]>0);entry.pricePerKg=Math.max(.01,Math.round(quote(s,f,standard)/fishWeight(f,standard)*100)/100);entry.value=Math.round(entry.weightKg*entry.pricePerKg);s.bag.push(entry);if(!f.boss){s.regionSpecies[s.region]=[...new Set([...(s.regionSpecies[s.region]||[]),f.id])];if(g===0)s.trophies[s.region]++;}if(f.legendary)s.legendTrophy=true;s.caught++;s.counts[s.region]++;s.fame+=f.boss?20:2;gainXP(s,entry.xp);addRep(s,.2);s.collection[f.id]=(s.collection[f.id]||0)+1;s.records[f.id]=Math.max(s.records[f.id]||0,entry.size);if(f.boss&&!s.bosses.includes(f.id))s.bosses.push(f.id);entry.raceMaterial=raceMaterial(s,f,g);if(trophyBait)s.trophyBait--;return entry;}
+export function addCatch(s,f,g,quality=1,{trophyBait=false,autoXp=null,now=Date.now(),rng=Math.random}={}){
+ const automatic=autoXp!==null;
+ if(s.bag.length>=capacity(s)||automatic&&f.boss||trophyBait&&(!(s.trophyBait>0)||f.boss||f.ornamental||g!==0||f.hp[0]<=0||!f.regions.includes(s.region)))return null;
+ if(!f.boss)quality*=baitQuality(s);
+ const baseUid=now.toString(36)+Math.random().toString(36).slice(2,9);
+ let uid=baseUid;
+ for(let suffix=1;[s.bag,s.homeFish].some(list=>list.some(item=>item.uid===uid));suffix++)uid=baseUid+'-'+suffix;
+ const xp=autoXp??Math.round(catchXP(s.region,f,g)*(1+(s.skills.lore||0)*.05)*(1+(mealBuff(s).xp||0)))*boostMultiplier(s,'xp',now);
+ const entry={uid,id:f.id,grade:g,xp,region:s.region,boss:f.boss,size:fishLength(f,g,quality)};
+ entry.weightKg=fishWeight(f,g,quality);
+ const standard=[1,2,0].find(i=>f.prices[i]>0);
+ entry.pricePerKg=Math.max(.01,Math.round(quote(s,f,standard)/fishWeight(f,standard)*100)/100);
+ entry.value=Math.round(entry.weightKg*entry.pricePerKg);
+ s.bag.push(entry);
+ if(!f.boss){
+  s.regionSpecies[s.region]=[...new Set([...(s.regionSpecies[s.region]||[]),f.id])];
+  if(g===0)s.trophies[s.region]++;
+ }
+ if(f.legendary)s.legendTrophy=true;
+ s.caught++;
+ s.counts[s.region]++;
+ s.fame+=f.boss?20:2;
+ gainXP(s,xp);
+ addRep(s,automatic?.1:.2,now);
+ s.collection[f.id]=(s.collection[f.id]||0)+1;
+ s.records[f.id]=Math.max(s.records[f.id]||0,entry.size);
+ if(f.boss&&!s.bosses.includes(f.id))s.bosses.push(f.id);
+ if(automatic)s.stats.autoCaught=(s.stats.autoCaught||0)+1;
+ entry.raceMaterial=raceMaterial(s,f,g,s.region,automatic);
+ if(trophyBait)s.trophyBait--;
+ if(!automatic&&s.waterNet.count<Number.MAX_SAFE_INTEGER&&rng()<WATER_NET.dropChance){
+  s.waterNet.count++;
+  return {...entry,waterNetDrop:true};
+ }
+ return entry;
+}
 // Sale methods: normal (100%), discount = reputation sale (80%, reputation +0.5 per fish),
 // bold = haggle (1% x3 / 10% x2 / otherwise x0.5, odds grow with luck). Reputation scales every sale by up to +-10%.
 export function sell(s,ids,method='normal',rng=Math.random){const wanted=new Set(ids),sold=s.bag.filter(x=>wanted.has(x.uid));if(!sold.length)return {gross:0,fee:0,net:0,count:0,success:false,outcome:null};
@@ -92,9 +155,22 @@ export function sell(s,ids,method='normal',rng=Math.random){const wanted=new Set
  s.fame=Math.max(0,s.fame+(method==='discount'?2:1)*sold.length);
  return {gross,fee,net:gross-fee,count:sold.length,success:outcome!=='fail',outcome};}
 function verifyFishArray(a,max){if(!Array.isArray(a)||a.length>max)throw Error('수족관 정보가 손상되었습니다.');return a.map(x=>{if(!x||!Number.isInteger(x.id)||!FISH[x.id]||![0,1,2].includes(x.grade)||!Number.isFinite(x.value)||x.value<0||!REGIONS[x.region]||typeof x.uid!=='string'||!Number.isFinite(x.size)||x.size<0)throw Error('물고기 정보가 손상되었습니다.');const weightKg=Number.isFinite(x.weightKg)&&x.weightKg>0?x.weightKg:fishWeight(FISH[x.id],x.grade);const pricePerKg=Number.isFinite(x.pricePerKg)&&x.pricePerKg>0?x.pricePerKg:x.value/weightKg;return {...x,weightKg,pricePerKg,boss:FISH[x.id].boss};});}
+function restoreAuto(raw,currentRegion){
+ if(!raw||typeof raw!=='object')return null;
+ const number=value=>Number.isFinite(value)&&value>=0?value:0;
+ const region=Number.isInteger(raw.region)&&REGIONS[raw.region]?raw.region:currentRegion;
+ const cast=raw.next,f=Number.isInteger(cast?.id)?FISH[cast.id]:null;
+ const net=cast?.net===true;
+ const next=f&&!f.boss&&(!f.ornamental||net)&&f.regions.includes(region)&&[0,1,2].includes(cast.g)&&f.hp[cast.g]>0&&number(cast.dur)>0
+  ?{id:cast.id,g:cast.g,dur:cast.dur,...(net?{net:true}:{})}:null;
+ return {on:Boolean(raw.on)&&Number.isFinite(raw.last),since:number(raw.since),last:number(raw.last),acc:Math.min(number(raw.acc),1e9),next,region,
+  bait:BAITS.find(b=>b.id===raw.bait&&b.tier===1)?.id||null,caught:number(raw.caught),kept:number(raw.kept),missed:number(raw.missed),
+  trophies:number(raw.trophies),ran:number(raw.ran),bought:number(raw.bought),spent:number(raw.spent),gold:number(raw.gold),xp:number(raw.xp),
+  used:number(raw.used),reason:String(raw.reason||''),seen:raw.seen!==false,ended:number(raw.ended)};
+}
 export function validateSave(raw){
  if(!raw||raw.schema!==4||raw.generation!==SAVE_GENERATION)throw Error('4.0 이전 또는 지원하지 않는 저장 파일이에요. 4.0에서 만든 저장 파일만 가져올 수 있어요.');const s=STARTER();
- s.resetNotice=raw.resetNotice===true;s.rewardBoosts=rewardBoosts(raw.rewardBoosts);
+ s.waterNet=restoreWaterNet(raw.waterNet);s.resetNotice=raw.resetNotice===true;s.rewardBoosts=rewardBoosts(raw.rewardBoosts);
  s.nickname=normalizeNickname(raw.nickname);
  for(const k of ['coins','debt','region','unlocked','fame','caught','attempts','seconds','dayOffset']){if(!Number.isFinite(raw[k])||raw[k]<0)throw Error('저장값이 손상되었습니다.');s[k]=raw[k];}if(!Number.isInteger(s.region)||!Number.isInteger(s.unlocked)||s.region>s.unlocked||s.unlocked>=REGIONS.length)throw Error('잘못된 지역 정보입니다.');
  for(const k of ['counts','pity']){if(!Array.isArray(raw[k])||raw[k].length!==REGIONS.length||raw[k].some(n=>!Number.isInteger(n)||n<0))throw Error('성장 정보가 손상되었습니다.');s[k]=Array.from({length:REGIONS.length},(_,i)=>raw[k][i]||0);}
@@ -102,7 +178,7 @@ export function validateSave(raw){
  const caughtBosses=FISH.filter(f=>f.boss&&s.collection[f.id]>0).map(f=>f.id);
  s.bosses=[...new Set([...caughtBosses,...(Array.isArray(raw.bosses)?raw.bosses.map(Number):[])].filter(id=>FISH[id]?.boss))];s.aquarium=[...new Set((Array.isArray(raw.aquarium)?raw.aquarium:[]).filter(id=>FISH[id]?.ornamental&&s.collection[id]))].slice(0,10);
  for(const k of ['ended','tutorial','muted','haptics'])s[k]=Boolean(raw[k]);s.trophyBait=Number.isSafeInteger(raw.trophyBait)&&raw.trophyBait>=0?raw.trophyBait:0;
- s.bait=raw.bait===TROPHY_BAIT.id&&s.trophyBait>0||BAITS.some(b=>b.id===raw.bait)?raw.bait:LEGACY_BAIT[raw.bait]||'worm1';s.rep=Number.isFinite(raw.rep)?clamp(raw.rep,-100,100):0;s.foods={};for(const [k,n] of Object.entries(raw.foods||{}))if(Number.isInteger(n)&&n>0&&n<10000)s.foods[k]=n;s.meal=raw.meal&&typeof raw.meal.id==='string'&&Number.isFinite(raw.meal.until)?{id:raw.meal.id,until:raw.meal.until}:null;s.regen=raw.regen&&typeof raw.regen.id==='string'&&Number.isFinite(raw.regen.until)&&Number.isFinite(raw.regen.rate)&&raw.regen.rate>0&&raw.regen.rate<1000?{id:raw.regen.id,until:raw.regen.until,rate:raw.regen.rate}:null;{const A=raw.auto,num=v=>Number.isFinite(v)&&v>=0?v:0;s.auto=A&&typeof A==='object'?{on:Boolean(A.on)&&Number.isFinite(A.last),since:num(A.since),last:num(A.last),acc:Math.min(num(A.acc),1e9),next:A.next&&Number.isInteger(A.next.id)&&FISH[A.next.id]&&!FISH[A.next.id].boss&&!FISH[A.next.id].ornamental&&[0,1,2].includes(A.next.g)&&Number.isFinite(A.next.dur)&&A.next.dur>0?{id:A.next.id,g:A.next.g,dur:A.next.dur}:null,region:Number.isInteger(A.region)?A.region:s.region,bait:BAITS.find(b=>b.id===A.bait&&b.tier===1)?.id||null,caught:num(A.caught),missed:num(A.missed),trophies:num(A.trophies),ran:num(A.ran),bought:num(A.bought),spent:num(A.spent),gold:num(A.gold),xp:num(A.xp),used:num(A.used),reason:String(A.reason||''),seen:A.seen!==false,ended:num(A.ended)}:null;}if(raw.stats&&Number.isFinite(raw.stats.autoCaught))s.stats.autoCaught=Math.max(0,raw.stats.autoCaught);if(raw.stats)for(const k of ['earned','spent','failures'])s.stats[k]=Math.max(0,Number(raw.stats[k])||0);
+ s.bait=raw.bait===TROPHY_BAIT.id&&s.trophyBait>0||BAITS.some(b=>b.id===raw.bait)?raw.bait:LEGACY_BAIT[raw.bait]||'worm1';s.rep=Number.isFinite(raw.rep)?clamp(raw.rep,-100,100):0;s.foods={};for(const [k,n] of Object.entries(raw.foods||{}))if(Number.isInteger(n)&&n>0&&n<10000)s.foods[k]=n;s.meal=raw.meal&&typeof raw.meal.id==='string'&&Number.isFinite(raw.meal.until)?{id:raw.meal.id,until:raw.meal.until}:null;s.regen=raw.regen&&typeof raw.regen.id==='string'&&Number.isFinite(raw.regen.until)&&Number.isFinite(raw.regen.rate)&&raw.regen.rate>0&&raw.regen.rate<1000?{id:raw.regen.id,until:raw.regen.until,rate:raw.regen.rate}:null;s.auto=restoreAuto(raw.auto,s.region);if(raw.stats&&Number.isFinite(raw.stats.autoCaught))s.stats.autoCaught=Math.max(0,raw.stats.autoCaught);if(raw.stats)for(const k of ['earned','spent','failures'])s.stats[k]=Math.max(0,Number(raw.stats[k])||0);
   for(const k of ['xp','boat','boatLicense','tackle','tackleUpgrade','home','hp']){if(!Number.isFinite(raw[k])||raw[k]<0)throw Error('새 성장 정보가 손상되었습니다.');s[k]=raw[k];}
   if(!BOATS[s.boat]||!BOATS[s.boatLicense]||!TACKLE[s.tackle]||!Number.isInteger(s.tackleUpgrade)||s.tackleUpgrade>5||!HOMES[s.home])throw Error('배와 집 정보가 손상되었습니다.');
   if(!Array.isArray(raw.ownedBoats)||!raw.ownedBoats.includes(0)||!raw.ownedBoats.includes(s.boat)||raw.ownedBoats.some(n=>!BOATS[n]||n>s.boatLicense))throw Error('소유 선박 정보가 손상되었습니다.');s.ownedBoats=[...new Set(raw.ownedBoats)];

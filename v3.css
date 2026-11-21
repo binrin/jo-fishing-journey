@@ -166,3 +166,18 @@
 .qty-key.qty-maxkey{background:#ffd66b;box-shadow:0 2px 0 #c58a16;color:#5a3a00}
 .qty-key.qty-fn{background:#e8e2d2;color:#6f604a}
 .qty-card .primary{margin:10px 0 0}
+
+.auto-overlay-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:center}
+.auto-overlay-actions button{min-height:40px}
+.auto-overlay-actions [data-do="auto"]{background:#c8f5ed;color:#174944}
+.water-net-card{display:grid;grid-template-columns:62px minmax(0,1fr);align-items:start;gap:10px;padding:10px;margin:10px 0;border:1px solid #a8d6ce;border-radius:12px;background:#e7f6f1;color:#19423d}
+.water-net-card img{display:block;width:100%;aspect-ratio:1;object-fit:contain;background:#d3ece7;border-radius:9px}
+.water-net-title{display:flex;gap:3px 8px;align-items:baseline;flex-wrap:wrap}
+.water-net-title strong,.water-net-reward strong{font-size:15px;color:#154b43}
+.water-net-title span{font-size:12px;font-weight:700;color:#35635c}
+.water-net-card p{font-size:12px;line-height:1.4;margin:3px 0}
+.water-net-card .water-net-time{font-weight:800;font-variant-numeric:tabular-nums;color:#126254}
+.water-net-card button{margin:6px 0 0;min-height:40px}
+.water-net-reward{align-items:center;grid-template-columns:48px minmax(0,1fr)}
+.auto-rules{margin-top:10px}
+.auto-rules summary{display:list-item;cursor:pointer;font-weight:700;padding:8px 0}

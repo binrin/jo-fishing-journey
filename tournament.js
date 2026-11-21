@@ -148,6 +148,27 @@ export function tournamentResults({event,ranking,place,payout,bait}){
  <button class="primary" data-do="close">확인</button>`;
 }
 
+export function tournamentFloatLayout(count,target,rng=Math.random){
+ const anglers=[{x:16,y:73},{x:84,y:73}];
+ if(count>=14)anglers.push({x:24,y:58});
+ if(count>=18)anglers.push({x:76,y:58});
+ const schools=[
+  {x:43,y:62,spread:4},{x:57,y:64,spread:4},
+  {x:38,y:73,spread:5},{x:62,y:74,spread:5}
+ ];
+ const floats=Array.from({length:count},(_,i)=>{
+  const school=schools[i%schools.length];
+  const direction=school.x<50?-1:1;
+  const side=i%2;
+  const angler=(i%4<2?anglers[side+2]:null)||anglers[side];
+  const x=school.x+(rng()-.5)*school.spread*2;
+  const y=school.y+(rng()-.5)*6;
+  const overlapsPlayer=Math.abs(x-target.x/10)<5&&Math.abs(y-target.y/10)<5;
+  return {x:overlapsPlayer?target.x/10+direction*(5+rng()*2):x,y,angler};
+ });
+ return {anglers,floats};
+}
+
 export function createTournamentFloats(scene){
  const layer=document.createElement('div');
  layer.className='tournament-floats';
@@ -155,16 +176,30 @@ export function createTournamentFloats(scene){
  scene.append(layer);
  return {
   cast(count,target){
-   layer.replaceChildren(...Array.from({length:count},(_,i)=>{
+   const {anglers,floats}=tournamentFloatLayout(count,target);
+   const width=scene.clientWidth/100,height=scene.clientHeight/100;
+   const boats=anglers.map(({x,y},i)=>{
+    const boat=document.createElement('i');
+    boat.className='tournament-angler';
+    boat.style.left=`${x}%`;
+    boat.style.top=`${y}%`;
+    boat.style.setProperty('--facing',x<50?'1':'-1');
+    boat.style.setProperty('--distance',y<65?'.74':'1');
+    boat.style.animationDelay=`${120*i}ms`;
+    return boat;
+   });
+   const dots=floats.map(({x,y,angler},i)=>{
     const dot=document.createElement('i');
-    const column=i%10;
-    const left=10+column*8.8+Math.random()*4;
-    dot.style.setProperty('--start',`${(column<5?4:96)-left}vw`);
-    dot.style.left=`${Math.abs(left-target.x/10)<3?left+4:left}%`;
-    dot.style.top=`${40+Math.floor(i/10)*16+Math.random()*8}%`;
-    dot.style.animationDelay=`${i*23+Math.random()*175}ms`;
+    dot.className='tournament-bobber';
+    dot.style.setProperty('--start-x',`${(angler.x-x)*width}px`);
+    dot.style.setProperty('--start-y',`${(angler.y-y)*height-12}px`);
+    dot.style.setProperty('--scale',String(.58+(y-57)*.022));
+    dot.style.left=`${x}%`;
+    dot.style.top=`${y}%`;
+    dot.style.animationDelay=`${i*18+Math.random()*210}ms`;
     return dot;
-   }));
+   });
+   layer.replaceChildren(...boats,...dots);
   },
   clear(){layer.replaceChildren();}
  };

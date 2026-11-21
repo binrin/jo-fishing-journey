@@ -50,20 +50,34 @@
   animation-duration: 1.8s;
 }
 .tournament-floats { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-.tournament-floats i {
+.tournament-floats i { position: absolute; display: block; }
+.tournament-angler {
+  width: clamp(30px, 12vw, 58px);
+  aspect-ratio: 1.15;
+  background: center bottom / contain no-repeat url(assets/tournament-angler.webp);
+  transform: translate(-50%, -89%) scale(var(--distance)) scaleX(var(--facing));
+  transform-origin: 50% 88%;
+  animation: tournament-angler-cast .72s ease-out both;
+}
+@keyframes tournament-angler-cast {
+  from, to { transform: translate(-50%, -89%) scale(var(--distance)) scaleX(var(--facing)); }
+  42% { transform: translate(-50%, -89%) scale(var(--distance)) scaleX(var(--facing)) rotate(9deg); }
+}
+.tournament-bobber {
   position: absolute;
-  width: clamp(8px, 2.4vw, 15px);
-  height: clamp(16px, 4.7vw, 29px);
+  width: clamp(8px, 2.2vw, 13px);
+  height: clamp(16px, 4.4vw, 26px);
   background: center / contain no-repeat url(assets/float.svg);
   animation: tournament-cast .65s both ease-out;
+  transform: translate(-50%, -83%) scale(var(--scale));
   opacity: .85;
   filter: drop-shadow(0 2px 2px #00394380);
 }
 @keyframes tournament-cast {
-  0% { opacity: 0; transform: translate(var(--start), 22vh) rotate(50deg); }
-  46% { opacity: 1; transform: translate(calc(var(--start) * .45), -11vh) rotate(-22deg); }
-  82% { transform: translateY(1vh); }
-  100% { transform: translateY(0); }
+  0% { opacity: 0; transform: translate(calc(var(--start-x) - 50%), calc(var(--start-y) - 83%)) scale(var(--scale)) rotate(50deg); }
+  46% { opacity: 1; transform: translate(calc(var(--start-x) * .45 - 50%), calc(var(--start-y) * .45 - 83% - 4vh)) scale(var(--scale)) rotate(-22deg); }
+  82% { transform: translate(-50%, -69%) scale(var(--scale)); }
+  100% { transform: translate(-50%, -83%) scale(var(--scale)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .tournament-floats i { animation: none; }

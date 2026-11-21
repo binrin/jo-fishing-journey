@@ -3,6 +3,7 @@
 // Ordinary catches are sold on the spot. A water net stores catches and can lure ornamentals.
 import {raceMaterial} from './race.js';
 import {FISH} from './data.js';
+import {awardFind} from './finds.js';
 import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice,gainXP,addCatch,addCatchReputation,WATER_NET,waterNetCanStore} from './engine.js';
 import {catchXP,BAITS,playerLevel,activeSkillFamily} from './progression.js';
 import {luck,regionProfile,boostMultiplier} from './systems.js';
@@ -25,7 +26,7 @@ export function canStartAuto(s){
 }
 export function startAuto(s,now=Date.now()){
  if(canStartAuto(s))return false;
- s.auto={on:true,since:now,last:now,acc:0,ran:0,next:null,region:s.region,bait:autoBait(s),caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,repGain:0,used:0,bought:0,spent:0,reason:'',seen:true};
+ s.auto={on:true,since:now,last:now,acc:0,ran:0,next:null,region:s.region,bait:autoBait(s),caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,repGain:0,used:0,bought:0,spent:0,reason:'',seen:true,finds:{},findsMissed:0};
  return true;
 }
 export function stopAuto(s,reason='stop'){if(!s.auto)return null;s.auto.on=false;s.auto.reason=reason;s.auto.next=null;s.auto.ended=Date.now();s.auto.seen=reason==='stop';return s.auto;}
@@ -59,8 +60,8 @@ export function autoPace(s){const pool=FISH.filter(x=>x.regions.includes(s.regio
  return pool.reduce((a,f)=>a+autoAttemptSeconds(s,f,f.hp[1]>0?1:2),0)/pool.length;}
 
 // Settle everything that happened between the last tick and `now`. Returns what this tick added.
-export function autoTick(s,now=Date.now(),rng=Math.random){
- const a=s.auto,got={caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,repGain:0,used:0,bought:0,spent:0,ids:{}};if(!a||!a.on||now<a.last)return got;
+export function autoTick(s,now=Date.now(),rng=Math.random,findRng=Math.random){
+ const a=s.auto,got={caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,repGain:0,used:0,bought:0,spent:0,ids:{},finds:{},findsMissed:0};if(!a||!a.on||now<a.last)return got;
  a.acc+=(now-a.last)/1000;a.last=now;
  for(let guard=0;guard<100000;guard++){
   if(!a.next){
@@ -80,10 +81,10 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
   const caughtAt=now-a.acc*1000;
   const rate=autoRates(s,caughtAt),xp=Math.max(1,Math.round(catchXP(s.region,f,g)*rate.xp))*boostMultiplier(s,'xp',caughtAt);
   const previousRep=s.rep||0;
-  let gold=0,kept=false;
+  let gold=0,kept=null;
   if(net){
    const prev=s.bait;s.bait=a.bait;
-   kept=Boolean(addCatch(s,f,g,1,{autoXp:xp,now:caughtAt}));
+   kept=addCatch(s,f,g,1,{autoXp:xp,now:caughtAt,findRng});
    s.bait=prev;
   }
   if(kept){
@@ -91,6 +92,14 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
   }else{
    gold=Math.max(1,Math.round(quote(s,f,g)*rate.sale));
    credit(s,gold);gainXP(s,xp);addCatchReputation(s,f,g,{automatic:true,now:caughtAt});s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;raceMaterial(s,f,g,a.region,true);
+  }
+  const find=kept?kept.find:awardFind(s,findRng);
+  if(find){
+   a.finds[find.id]=(a.finds[find.id]||0)+1;
+   got.finds[find.id]=(got.finds[find.id]||0)+1;
+  }else{
+   a.findsMissed++;
+   got.findsMissed++;
   }
   const repGain=s.rep-previousRep;
   a.repGain=(a.repGain||0)+repGain;got.repGain+=repGain;

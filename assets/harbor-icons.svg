@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg">
  <defs>
+  <symbol id="item-bag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5V4a3 3 0 0 1 6 0v1M5 12l-.7 6.3A2.4 2.4 0 0 0 6.7 21h10.6a2.4 2.4 0 0 0 2.4-2.7L19 12"/><path d="M5 6.5Q12 4 19 6.5l.7 4a2 2 0 0 1-1.5 2.3l-4.7.9m-3 0-4.7-.9a2 2 0 0 1-1.5-2.3Z"/><rect x="10.5" y="12" width="3" height="4" rx="1"/></g></symbol>
   <symbol id="shop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 4-6 8-9q3-3 6-3l-1 13a3 3 0 0 1-6 0v-2l2 2"/><circle cx="8.5" cy="15.5" r="1.8"/></g></symbol>
   <symbol id="market" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round"><path d="M3 12Q11 1 18 11l4-4v10l-4-4Q11 23 3 12Z"/><path d="M10 7q3 5 0 10"/><circle cx="7.5" cy="11.5" r=".6" fill="currentColor"/></g></symbol>
   <symbol id="skills" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6q-4-3-9-2v14q5-1 9 2 4-3 9-2V4q-5-1-9 2v14"/><path d="m6 8 3 .6m6 0 3-.6"/></g></symbol>

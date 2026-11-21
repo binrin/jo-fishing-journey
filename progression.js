@@ -82,7 +82,6 @@ export {REGION_LEVELS};
 // Boat fishing perks scale gently with hull tier (balanced in tools/simulate_expansion.mjs).
 export const boatPerks=id=>{const t=Math.max(0,Math.min(24,Number(id)||0))+1;return {wait:+(t*.008).toFixed(3),tension:+(t*.005).toFixed(3)};};
 export const boatForRegion=id=>BOATS.find(b=>b.region>=id);
-export const gearRequiredLevel=(tier,rank)=>Math.min(100,TACKLE[tier].level+rank);
 export const MAX_LEVEL=100;
 // Preserve levels 1–50 and existing saves. Later bands grow by 20%,
 // pending calibration with the complete 350-hour region/economy simulation.

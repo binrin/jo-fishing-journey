@@ -2,7 +2,7 @@ import {equipmentPanel} from './equipment-panel.js';
 import {scheduleLabel} from './ecology.js';
 import {weightLabel} from './catch-rules.js';
 import {FISH,REGIONS} from './data.js';
-import {BOATS,TACKLE,HOMES,SKILLS,BAITS,boatForRegion,gearRequiredLevel,REGION_LEVELS,MAX_LEVEL,skillRequiredLevel,playerLevel,xpForLevel,availableSP,boatPerks,BAIT_FAMILIES,TROPHY_BAIT} from './progression.js';
+import {BOATS,TACKLE,HOMES,SKILLS,BAITS,boatForRegion,REGION_LEVELS,MAX_LEVEL,skillRequiredLevel,playerLevel,xpForLevel,availableSP,boatPerks,BAIT_FAMILIES,TROPHY_BAIT} from './progression.js';
 import {FOODS,foodPrice,activeMeal,foodDesc,activeRegen,regionProfile,recommendedBait,familyInfo,HABITAT_NAME,repLabel,repFactor,luck,aquariumLuck,luckOf} from './systems.js';
 import {capacity,maxHP,levelBonuses,baitCount,gearPrice,gate,baitPrice,isNight,surveyProgress,legendReady} from './engine.js';
 import {sprite,waterStyle,gearArt,baitArt} from './art.js';

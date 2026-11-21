@@ -191,3 +191,50 @@
 @keyframes forge-fail-impact{0%{opacity:0;transform:translateY(-8px) scale(.94)}50%{opacity:1;transform:translateX(-4px)}75%{transform:translateX(3px)}100%{opacity:1;transform:none}}
 .toast.toast-announce-only{clip-path:inset(50%);width:1px;height:1px;min-width:0;min-height:0;padding:0;border:0;overflow:hidden;white-space:nowrap;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.k-forge-fail .cb-card{animation:none}}
+
+/* Find inventory */
+#game#game .top .finds-button{position:relative;flex:none;display:grid;place-items:center;background:#e1eee4;color:#214f43;min-width:34px;min-height:34px}
+.finds-button svg{width:20px;height:20px;overflow:visible}
+.finds-button span{position:absolute;right:3px;top:3px;width:8px;height:8px;border:2px solid #e1eee4;border-radius:50%;background:#478657}
+.finds-button.finds-full span{background:#c25b35}
+.find-heading{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #b3cab8;border-radius:12px;background:#e5efe1;color:#244e43}
+.find-heading svg{flex:none}
+.find-heading div{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.find-heading strong{font-size:18px}
+.find-heading span{font-size:12px}
+.find-tabs{display:flex;gap:6px;margin:9px 0}
+.find-tabs button,.find-pager button,.find-sale-actions button,.find-upgrade button{padding:6px 9px;border-radius:8px;background:#e9eddf;color:#214d42;min-height:40px;font-weight:700}
+.find-tabs button{flex:1}
+.find-tabs [aria-pressed="true"],.find-upgrade button{background:#187d73;color:white}
+.find-items,.find-upgrades,.find-prices,.find-quote ul,.find-result ul{list-style:none;margin:0;padding:0}
+.find-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 9px;padding:8px 0;border-bottom:1px solid #d7dfce}
+.find-icon{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;background:#dcebe3;font-size:21px}
+.find-item small{display:block;color:#466152}
+.find-sale-actions{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px}
+.find-sale-actions button,.find-upgrade button{font-size:13px}
+.find-pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:8px}
+.find-pager button{width:44px;font-size:22px}
+.find-details{margin-top:9px;padding:8px 10px;border:1px solid #d2ddcb;border-radius:10px}
+.find-details summary{padding:3px 0;cursor:pointer;font-weight:700}
+.find-details p{font-size:12px;color:#496655;margin:6px 0}
+.find-upgrades li{display:grid;grid-template-columns:1fr .85fr 1.1fr .85fr;align-items:center;gap:4px;padding:3px 0;border-top:1px solid #dce3d4;font-size:12px;min-height:35px}
+.find-upgrades strong{color:#266d54}
+.find-prices li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:5px 0;border-top:1px solid #dce3d4;font-size:12px}
+.find-quote,.find-result{margin:10px 0;padding:10px 12px;border:1px solid #b3cab8;border-radius:12px;background:#eef5eb}
+.find-quote li,.find-quote p{display:flex;justify-content:space-between;gap:6px;padding:5px 0}
+.find-quote p{margin:6px 0 0;border-top:1px solid #abc6b4}
+.find-result ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:4px;margin:4px 0}
+.find-result li{font-size:12px}
+.find-result .find-icon{width:24px;height:24px;font-size:16px}
+.find-result p{font-size:12px;margin:6px 0}
+.find-result button{font-size:13px;margin:6px 0 0}
+
+@media not all and (max-height:520px) and (orientation:landscape){
+ #game#game:not(.town-view)>.wallet{margin-right:129px}
+}
+@media(max-width:350px){
+ #game#game:not(.town-view)>.wallet{margin-right:119px}
+}
+.find-upgrade{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:10px;padding:8px 10px;border-radius:10px;background:#e3efe4}
+.find-upgrade small{display:block;color:#466152;font-size:12px}
+.find-upgrade button{flex:none}

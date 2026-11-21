@@ -99,10 +99,10 @@ function confirmHTML(s,tier){
  return `<section class="race-paddock race-check-in">${boatCard(s,raceStats(s))}
  <dl class="race-stat-grid race-check-in-money">${ledger('참가비',fmt(league.fee)+' G')}${ledger('보유 금화',fmt(s.coins)+' G')}${ledger('결제 후 금화',block?'—':fmt(s.coins-league.fee)+' G')}</dl>
  <div class="race-guide"><h3>첫 출전 조작법</h3><ol>
- <li><b>가속과 조향</b> · 가속을 누른 채 좌우로 조향해 점선을 따라가세요.</li>
- <li><b>급커브</b> · 빨간 줄무늬 구간에서는 브레이크로 감속하세요.</li>
- <li><b>부스트</b> · 녹색 부표 사이를 통과하면 부스트가 충전돼요.</li>
- </ol><p>키보드 · 방향키 또는 WASD · 스페이스 부스트</p></div>
+ <li><b>자동 가속과 조향</b> · 배는 자동으로 가속해요. 수면의 왼쪽이나 오른쪽을 터치해 같은 방향으로 움직이세요.</li>
+ <li><b>급커브</b> · 왼쪽 아래 제동 버튼을 눌러 감속하세요.</li>
+ <li><b>부스트</b> · 오른쪽 아래 버튼으로 사용해요. 녹색 부표 사이를 통과하면 충전돼요.</li>
+ </ol><p>키보드 · ← → 또는 A D 조향 · ↓ 또는 S 제동 · 스페이스 부스트</p></div>
  ${block?`<p class="race-block">${block}</p>`:`<p class="race-tip">기권하면 참가비가 소진돼요.</p>`}
  <div class="race-menu">${button('대회 목록','race')}${button('참가비 결제 및 출발','race-start',tier,!!block,'primary')}</div></section>`;
 }
@@ -119,15 +119,16 @@ function liveHTML(r){
  </div>
  <div id="raceCue" class="race-cue" data-kind="start" role="status">3</div>
  <div class="race-drive-bottom">
-  <div class="race-drive-readouts">
-   <div class="race-speed"><b id="raceSpeed">0</b><span>km/h</span></div>
-   <label class="race-boost-hud" for="raceEnergy"><span>부스트 <b id="raceCharge">65%</b></span><progress id="raceEnergy" max="100" value="65"></progress></label>
+  <div class="race-controls" role="group" aria-label="선박 조종">
+   <button type="button" data-drive="brake"><i aria-hidden="true"></i><span>제동</span></button>
+   <div class="race-drive-readouts">
+    <div class="race-speed"><b id="raceSpeed">0</b><span>km/h</span></div>
+    <label class="race-boost-hud" for="raceEnergy"><span>부스트 <b id="raceCharge">65%</b></span><progress id="raceEnergy" max="100" value="65"></progress></label>
+   </div>
+   <button type="button" data-drive="boost"><i aria-hidden="true">↯</i><span>부스트</span></button>
   </div>
-  <div class="race-controls" aria-label="선박 조종">
-   <div class="race-steering"><button type="button" data-drive="left" aria-label="왼쪽 조향"><i aria-hidden="true"></i></button><button type="button" data-drive="right" aria-label="오른쪽 조향"><i aria-hidden="true"></i></button></div>
-   <div class="race-engine"><button type="button" data-drive="brake"><i aria-hidden="true"></i><span>제동</span></button><button type="button" data-drive="boost"><i aria-hidden="true">↯</i><span>부스트</span></button><button type="button" data-drive="throttle"><i aria-hidden="true"></i><span>가속</span></button></div>
-  </div>
-  <p class="race-keyboard">방향키 / WASD · 스페이스 부스트</p>
+  <p class="race-steer-hint">수면 왼쪽·오른쪽 터치로 조향</p>
+  <p class="race-keyboard">← → / A D 조향 · ↓ / S 제동 · 스페이스 부스트</p>
  </div>
  <aside class="race-pause" hidden aria-labelledby="racePauseTitle">
   <div><h3 id="racePauseTitle">일시정지</h3><p>기권하면 낸 참가비는 소진돼요.</p>
@@ -150,7 +151,52 @@ function resultHTML(r,result){
  </section>`;
 }
 
-const DRIVE_KEYS={ArrowUp:'throttle',w:'throttle',ArrowDown:'brake',s:'brake',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',' ':'boost'};
+const DRIVE_KEYS={ArrowDown:'brake',s:'brake',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',' ':'boost'};
+const isSteer=action=>action==='left'||action==='right';
+const STEER_TAP_SECONDS=.12;
+
+export function createRaceInput(){
+ const contacts=new Map();
+ let tap=null;
+ const held=()=>{
+  const actions={left:false,right:false,brake:false,boost:false};
+  if(tap)actions[tap.action]=true;
+  for(const {action} of contacts.values())actions[action]=true;
+  return actions;
+ };
+ return {
+  press(id,action){
+   if(contacts.has(id))return;
+   if(isSteer(action))tap=null;
+   contacts.set(id,{action,seconds:0});
+  },
+  move(id,action){
+   const contact=contacts.get(id);
+   if(!contact||!isSteer(contact.action)||contact.action===action)return;
+   contact.action=action;
+   contact.seconds=0;
+   tap=null;
+  },
+  release(id,allowTap=false){
+   const contact=contacts.get(id);
+   contacts.delete(id);
+   if(!allowTap||!contact||!isSteer(contact.action)||contact.seconds>=STEER_TAP_SECONDS)return;
+   if([...contacts.values()].some(other=>isSteer(other.action)))return;
+   tap={action:contact.action,remaining:STEER_TAP_SECONDS-contact.seconds};
+  },
+  clear(){contacts.clear();tap=null;},
+  held,
+  next(seconds){
+   const actions=held();
+   for(const contact of contacts.values())contact.seconds+=seconds;
+   if(tap){
+    tap.remaining-=seconds;
+    if(tap.remaining<=0)tap=null;
+   }
+   return actions;
+  }
+ };
+}
 
 export function createRaceUI({getState,body,modal,show,save,render,toast,enhancementFailed,spend,credit,canRace,sound,buzz}){
  let live=null,tier=0,slot=PARTS[0].id;
@@ -173,15 +219,16 @@ export function createRaceUI({getState,body,modal,show,save,render,toast,enhance
   const close=modal.querySelector('#closeModal');
   const closeLabel=close.getAttribute('aria-label');
   close.setAttribute('aria-label','레이스 일시정지');
-  const keyboard=new Set(),pointers=new Map();
+  const input=createRaceInput(),viewport=stage.querySelector('.race-viewport');
   const pause=stage.querySelector('.race-pause'),resume=pause.querySelector('[data-race-resume]');
   const controls=[...stage.querySelectorAll('[data-drive]')];
   let frame=0,last=0,paused=false;
-  const refresh=()=>controls.forEach(el=>{
-   const down=[...pointers.values(),...[...keyboard].map(key=>DRIVE_KEYS[key])].includes(el.dataset.drive);
-   el.classList.toggle('pressed',down);
-  });
-  const clear=()=>{keyboard.clear();pointers.clear();refresh();last=0;};
+  const refresh=(held=input.held())=>{
+   for(const button of controls)button.classList.toggle('pressed',held[button.dataset.drive]);
+   const direction=held.left===held.right?'':held.left?'left':'right';
+   if(stage.dataset.steering!==direction)stage.dataset.steering=direction;
+  };
+  const clear=()=>{input.clear();refresh();last=0;};
   const listen=(el,event,fn,capture=false)=>el.addEventListener(event,fn,{signal:ctrl.signal,capture});
   const setPaused=(value)=>{
    paused=value;
@@ -207,31 +254,52 @@ export function createRaceUI({getState,body,modal,show,save,render,toast,enhance
   });
   listen(window,'blur',clear);
   listen(document,'visibilitychange',clear);
+  listen(viewport,'contextmenu',e=>e.preventDefault());
   for(const type of ['keydown','keyup'])listen(window,type,e=>{
    const key=e.key.length===1?e.key.toLowerCase():e.key;
-   if(paused||!DRIVE_KEYS[key])return;
-   e.preventDefault();
-   if(e.type==='keydown')keyboard.add(key);
-   else keyboard.delete(key);
+   const buttonAction=(key===' '||key==='Enter')?e.target.closest?.('[data-drive]')?.dataset.drive:null;
+   if(paused)return;
+   if(type==='keydown'){
+    const action=buttonAction||DRIVE_KEYS[key];
+    if(!action)return;
+    e.preventDefault();
+    if(!e.repeat)input.press('key:'+e.code,action);
+   }else{
+    input.release('key:'+e.code,r.countdown<=0);
+   }
    refresh();
   });
-  for(const button of controls){
-   listen(button,'pointerdown',e=>{
-    if(e.button!==0)return;
+  const sideAt=x=>{
+   const {left,width}=viewport.getBoundingClientRect();
+   return x<left+width/2?'left':'right';
+  };
+  const bindPointer=(surface,actionFor,steering=false)=>{
+   listen(surface,'pointerdown',e=>{
+    if(paused||e.button!==0)return;
     e.preventDefault();
-    button.setPointerCapture(e.pointerId);
-    pointers.set(e.pointerId,button.dataset.drive);
+    surface.setPointerCapture(e.pointerId);
+    input.press(e.pointerId,actionFor(e));
     refresh();
    });
-   for(const event of ['pointerup','pointercancel','lostpointercapture'])listen(button,event,e=>{pointers.delete(e.pointerId);refresh();});
-  }
+   if(steering)listen(surface,'pointermove',e=>{
+    input.move(e.pointerId,actionFor(e));
+    refresh();
+   });
+   for(const event of ['pointerup','pointercancel','lostpointercapture'])listen(surface,event,e=>{
+    input.release(e.pointerId,steering&&event==='pointerup'&&r.countdown<=0);
+    refresh();
+   });
+  };
+  bindPointer(viewport,e=>sideAt(e.clientX),true);
+  for(const button of controls)bindPointer(button,()=>button.dataset.drive);
   function tick(now){
    if(!modal.open||!stage.isConnected){reset();return;}
    const dt=last?(now-last)/1000:0;
    last=now;
-   const held=[...pointers.values(),...[...keyboard].map(key=>DRIVE_KEYS[key])];
    if(paused||document.hidden){frame=requestAnimationFrame(tick);return;}
-   stepRace(r,dt,Object.fromEntries(held.map(key=>[key,true])));
+   const held=input.next(r.countdown>0?0:Math.min(dt,.05));
+   stepRace(r,dt,held);
+   refresh();
    draw(dt);
    const p=r.player;
    const order=raceOrder(r);

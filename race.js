@@ -214,7 +214,7 @@ function advanceTeams(r,dt,t){
  }
 }
 
-export function stepRace(r,dt,input){
+export function stepRace(r,dt,input={}){
  if(r.done)return;
  dt=clamp(dt,0,.05);
  if(r.countdown>0){
@@ -225,7 +225,7 @@ export function stepRace(r,dt,input){
  }
  r.time+=dt;
  const {player:p,course:c,stats:s}=r;
- const boost=input.boost&&!input.brake&&p.energy>0&&(input.throttle||p.speed>s.speed*.5);
+ const boost=input.boost&&!input.brake&&p.energy>0;
  p.energy=boost?Math.max(0,p.energy-dt*31/s.charge):Math.min(100,p.energy+dt*1.1*s.charge);
  const steering=Number(Boolean(input.right))-Number(Boolean(input.left));
  const wake=r.teams.find(team=>team.at>p.at+5&&team.at<p.at+47&&Math.abs(team.x-p.x)<16);
@@ -238,13 +238,13 @@ export function stepRace(r,dt,input){
  const center=courseCenter(c,p.at);
  p.edge=Math.abs(p.x-center)>c.width/2-9;
  if(p.edge)p.x=clamp(p.x,center-c.width/2+8,center+c.width/2-8);
- const launch=r.launchBoost&&r.time<.9&&input.throttle&&!input.brake;
+ const launch=r.launchBoost&&r.time<.9&&!input.brake;
  const top=s.speed*(boost?1+.30*s.boost:launch?1.23:1)*(p.edge?.61:1)*(p.impact>0?.49:1);
- const target=input.brake?0:(input.throttle||boost?top:top*.21);
- const reaction=input.brake?3.7:target>p.speed?(input.throttle||boost?1.75*s.accel*(launch?1.8:1):.55):2.3;
+ const target=input.brake?0:top;
+ const reaction=input.brake?3.7:target>p.speed?1.75*s.accel*(launch?1.8:1):2.3;
  p.speed+=(target-p.speed)*Math.min(1,dt*reaction);
  p.impact=Math.max(0,p.impact-dt);
- p.boosting=boost||launch;
+ p.boosting=Boolean(boost||launch);
  for(const hazard of c.hazards){
   if(r.hit.has(hazard)||Math.abs(p.at-hazard.at)>16||Math.abs(p.x-hazard.x)>hazard.radius+6)continue;
   r.hit.add(hazard);

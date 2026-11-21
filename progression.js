@@ -57,7 +57,7 @@ SKILLS.push(
  {id:'springline',name:'파도 탄력',type:'active',level:40,max:3,costs:[2,4,6],requires:'elastic',effect:'elastic',description:'줄 긴장을 즉시 15/20/25 낮추고 7/9/11초 동안 증가를 막아요. 재사용 24초.'},
  {id:'thunder',name:'천둥 충격',type:'active',level:48,max:3,costs:[2,4,6],requires:'shock',effect:'shock',description:'즉시 6/8/10%, 이어서 5초간 14/19/24% 피해. 재사용 23초.'},
  {id:'deepFreeze',name:'한류 피로',type:'active',level:58,max:3,costs:[2,4,6],requires:'slow',effect:'slow',description:'돌진을 즉시 끊고 7/9/11초 동안 다음 방향 전환과 돌진을 늦춰요. 재사용 24초.'},
- {id:'guardian',name:'파수꾼의 근성',type:'active',level:68,max:3,costs:[2,4,6],requires:'grit',effect:'grit',description:'체력 8/12/16 회복. 7/9/11초 동안 내 체력 피해를 막아요. 재사용 28초.'},
+ {id:'guardian',name:'파수꾼의 근성',shortName:'파수 근성',type:'active',level:68,max:3,costs:[2,4,6],requires:'grit',effect:'grit',description:'체력 8/12/16 회복. 7/9/11초 동안 내 체력 피해를 막아요. 재사용 28초.'},
  {id:'currentRead',name:'물살 읽기',type:'passive',level:14,max:3,costs:[2,3,5],description:'단계마다 물고기의 방향 전환 직후 받는 피해 경감 시간이 0.08초 늘어요.'},
  {id:'breath',name:'고른 호흡',type:'passive',level:22,max:3,costs:[2,3,5],description:'단계마다 손을 떼었을 때 줄 긴장 감소 속도가 초당 2.5%p 늘어요.'},
  {id:'followThrough',name:'연속 감기',type:'passive',level:32,max:3,costs:[2,3,5],description:'연속 당기기 2회째부터 콤보 보너스가 단계마다 1%p씩 더 커져요.'},

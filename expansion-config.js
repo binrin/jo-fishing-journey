@@ -29,5 +29,7 @@ export function extendProgression(boats,tackle,homes,skills,baits,budgets,target
  ['execute','전설의 챔질','active',90,'체력 35% 미만 물고기에 20/30/40%, 그 외 8/12/16% 피해. 재사용 24초.']
  ];
  for(const [id,name,type,level,description] of extra)skills.push({id,name,type,level,description,max:3,costs:[2,4,6]});
+ skills.find(x=>x.id==='surge').shortName='급류 당김';
+ skills.find(x=>x.id==='execute').shortName='전설 챔질';
  // v3.0: baits are families x grades in progression.js
 }

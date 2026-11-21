@@ -364,7 +364,7 @@ function goTown(){
 }
 function renderActiveSkills(){
  ACTIVE_SLOTS.forEach(i=>{const id=state.equippedSkills[i],k=SKILL_BY_ID[id],n=state.skills[id]||0,b=$('active'+i),cool=skillCooldown(fight,id),inFight=phase==='fight'&&fight&&!fight.done;
- if(b.dataset.skill!==id){b.dataset.skill=id;b.querySelector('.skill-icon')?.remove();b.insertAdjacentHTML('afterbegin',skillIcon(id));}b.classList.toggle('unlearned',!n);b.style.setProperty('--cool',k&&cool>0?Math.min(1,cool/(SKILL_COOLDOWN[id]||20)):0);b.setAttribute('aria-label',`${i+1}번 ${k.name}`);b.setAttribute('aria-keyshortcuts',String(i+1));b.querySelector('b').textContent=k.name;
+ if(b.dataset.skill!==id){b.dataset.skill=id;b.querySelector('.skill-icon')?.remove();b.insertAdjacentHTML('afterbegin',skillIcon(id));}b.classList.toggle('unlearned',!n);b.style.setProperty('--cool',k&&cool>0?Math.min(1,cool/(SKILL_COOLDOWN[id]||20)):0);b.setAttribute('aria-label',`${i+1}번 ${k.name}`);b.setAttribute('aria-keyshortcuts',String(i+1));b.title=k.name;b.querySelector('b').textContent=k.shortName||k.name;
  b.querySelector('small').textContent=!n?'미습득':!inFight?(phase==='bite'||phase==='waiting'?'챔질 후 사용':`Lv.${n}`):cool>0?`${Math.ceil(cool)}초`:'사용 가능';
  b.disabled=!n||paused||!inFight||cool>0;b.classList.toggle('effect-on',Boolean(fight?.effects[k.effect||id]>0));
  });

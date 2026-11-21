@@ -10,7 +10,7 @@ import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,availableSP,catchXP,skillReq
 import {ACTIVE_SLOTS,DEFAULT_ACTIVE_SKILLS,SKILL_BY_ID,activeSkillFamily} from './progression.js';
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff,rewardBoosts,boostMultiplier} from './systems.js';
 import {normalizeNickname} from './nickname.js';
-export const VERSION='4.0.0',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
+export const VERSION='4.0.1',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const LEVEL_HP=2,REPEAT_BOSS_CHANCE=.04;
 export const STARTER=()=>({schema:4,generation:SAVE_GENERATION,resetNotice:false,rewardBoosts:rewardBoosts(),nickname:'',coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',trophyBait:0,pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:[...DEFAULT_ACTIVE_SKILLS],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});

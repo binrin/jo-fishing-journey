@@ -26,17 +26,25 @@
  #game#game:not(.town-view){grid-template-columns:minmax(0,1fr);grid-template-rows:44px minmax(0,1fr) 22px auto 64px 46px 56px;grid-template-areas:"top" "scene" "say" "hud" "ctrl" "nav" "sk"}
  #game#game.battle-mode{grid-template-rows:44px minmax(0,1fr) 22px auto 60px;grid-template-areas:"top" "scene" "say" "hud" "sk"}
  #game#game:not(.town-view)>*{grid-column:1;grid-row:auto}
- #game#game:not(.town-view)>.top{grid-area:top;padding:3px 10px}
- #game#game:not(.town-view) .brand h1{display:none}
- #game#game:not(.town-view) .brand small{font-size:10px;font-weight:700;line-height:1.25;display:block;max-width:104px}
- #game#game:not(.town-view) .brand{min-width:0;gap:6px}
- #game#game:not(.town-view) .brandmark{width:30px;height:30px;font-size:16px}
+ #game#game:not(.town-view)>.top{grid-area:top;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto;align-items:center;gap:5px;padding:3px 10px}
+ #game#game:not(.town-view) .brand{min-width:0;gap:0;margin:0}
+ #game#game:not(.town-view) .brand>div{min-width:0;width:100%}
+ #game#game:not(.town-view) .brand h1,#game#game:not(.town-view) .brandmark{display:none}
+ #game#game:not(.town-view) #headerProgress{display:grid;column-gap:4px;margin:0 0 2px;color:#31554b;font-size:11px;font-weight:700;line-height:1.12;letter-spacing:0;font-variant-numeric:tabular-nums}
+ #game#game:not(.town-view) #headerXP{overflow-wrap:anywhere}
  #game#game:not(.town-view) .top .icon-button{width:34px;height:34px}
- /* wallet folds into the header bar */
- #game#game:not(.town-view)>.wallet{grid-area:top;justify-self:end;align-self:center;margin-right:84px;padding:0;background:none;border:0;gap:6px;font-size:13px;z-index:3}
- #game#game:not(.town-view)>.wallet small,#game#game:not(.town-view)>.wallet button>span:last-child{display:none}
- #game#game:not(.town-view)>.wallet button{background:#f0ebd9;border:1px solid #d9cfb3;border-radius:14px;padding:2px 8px}
- #game#game:not(.town-view)>.wallet button b{font-size:12px}
+ #game#game:not(.town-view) .top>.wallet{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:0 4px;min-width:0;padding:0;margin:0;background:none;border:0}
+ #game#game:not(.town-view) .top>.wallet>span:first-child{grid-column:1/-1;justify-content:end;gap:3px;min-width:0}
+ #game#game:not(.town-view) .top>.wallet .coin{font-size:12px;line-height:1;flex:none}
+ #game#game:not(.town-view) #coins{font-size:12px;line-height:1.08;text-align:right;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+ #game#game:not(.town-view) [data-balance="large"] #coins{font-size:10px}
+ #game#game:not(.town-view) [data-balance="extra"] #coins{font-size:9.5px}
+ #game#game:not(.town-view) .top>.wallet small,#game#game:not(.town-view) #bagBtn>span:last-child{display:none}
+ #game#game:not(.town-view) .top>.wallet #debt{grid-column:1;align-self:center;font-size:9px;line-height:1.08;overflow-wrap:anywhere}
+ #game#game:not(.town-view) .top>.wallet #bagBtn{grid-column:2;gap:3px;margin:0;padding:0 4px;background:#eaf0e1;border:1px solid #cbd9c1;border-radius:8px}
+ #game#game:not(.town-view) .top>.wallet #bagBtn .mini-icon{display:grid;place-items:center;width:11px;height:11px;background:none}
+ #game#game:not(.town-view) .top>.wallet #bagBtn .harbor-nav-icon{display:block;width:11px;height:11px}
+ #game#game:not(.town-view) .top>.wallet #bagCount{font-size:10px;line-height:1.1;white-space:nowrap}
  #game#game:not(.town-view)>#scene{grid-area:scene}
  /* active skills: a row of icon buttons at the very bottom (never over the water) */
  #game#game:not(.town-view)>.active-skills{grid-area:sk;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:5px 8px;background:#f5ecd6!important;border-top:1px solid #dccca4;z-index:10}
@@ -69,10 +77,12 @@
  #game#game:not(.town-view) .tension>span:first-child{grid-row:1;grid-column:1}
  #game#game:not(.town-view) .tension>.bar{grid-row:2}
  /* controls: bait + quest chips on the left, big action button, school on the right */
- #game#game:not(.town-view)>.controls{grid-area:ctrl;padding:4px 10px}
- #game#game:not(.town-view)>.controls #actionBtn{width:min(190px,48vw);height:54px}
- #game#game:not(.town-view)>.controls #skillBtn{right:10px;bottom:9px;width:46px;height:46px}
- #game#game:not(.town-view)>.journey-row{grid-area:ctrl;justify-self:start;align-self:center;display:flex;flex-direction:column;gap:4px;margin-left:8px;width:calc((100% - min(190px,48vw))/2 - 14px);background:none;border:0;z-index:3}
+ #game#game:not(.town-view){--fishing-side:clamp(65px,23%,104px)}
+ #game#game:not(.town-view)>.controls{grid-area:ctrl;display:grid;grid-template-columns:var(--fishing-side) minmax(0,1fr) 44px 44px;padding:1px 9px;column-gap:6px}
+ #game#game:not(.town-view)>.controls #actionBtn{grid-column:2;justify-self:end;width:100%;max-width:190px;height:54px}
+ #game#game:not(.town-view)>.controls #findsFishingBtn{grid-column:3;position:relative}
+ #game#game:not(.town-view)>.controls #skillBtn{grid-column:4;position:relative;inset:auto;width:44px;height:44px}
+ #game#game:not(.town-view)>.journey-row{grid-area:ctrl;justify-self:start;align-self:center;display:flex;flex-direction:column;gap:4px;margin-left:8px;width:var(--fishing-side);background:none;border:0;z-index:3}
  #game#game:not(.town-view)>.journey-row button{padding:3px 7px;border:1px solid #d7c8a2!important;border-radius:9px;background:#fffaf0;font-size:11px;min-height:26px;white-space:nowrap;overflow:hidden}
  #game#game:not(.town-view)>.journey-row button span{overflow:hidden;text-overflow:ellipsis}
  #game#game:not(.town-view)>.journey-row small{display:none}
@@ -102,7 +112,6 @@
  #game#game[data-fit=m]:not(.town-view)>.controls #actionBtn{height:50px}
  #game#game[data-fit=s]:not(.town-view)>.controls #actionBtn,#game#game[data-fit=xs]:not(.town-view)>.controls #actionBtn{height:44px}
  #game#game[data-fit=s]:not(.town-view)>.controls #actionBtn small,#game#game[data-fit=xs]:not(.town-view)>.controls #actionBtn small{display:none}
- #game#game[data-fit=s]:not(.town-view)>.controls #skillBtn,#game#game[data-fit=xs]:not(.town-view)>.controls #skillBtn{width:40px;height:40px;bottom:5px}
  #game#game[data-fit=s]:not(.town-view)>.journey-row button,#game#game[data-fit=xs]:not(.town-view)>.journey-row button{min-height:21px;padding:1px 7px;font-size:10px}
  #game#game[data-fit=s]:not(.town-view)>.journey-row,#game#game[data-fit=xs]:not(.town-view)>.journey-row{gap:3px}
  #game#game[data-fit=s]:not(.town-view)>.instruction,#game#game[data-fit=xs]:not(.town-view)>.instruction{line-height:18px;font-size:11px}
@@ -128,17 +137,13 @@
 #game#game:not(.town-view)>.bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
 #game#game:not(.town-view)>.bottom-nav button{min-width:0;overflow:hidden}
 @media(max-width:350px){
- #game#game:not(.town-view) .brand small{display:none}
- #game#game:not(.town-view)>.wallet{margin-right:76px;font-size:12px;gap:4px}
- #game#game:not(.town-view)>.wallet .coin{transform:scale(.8)}
+ #game#game:not(.town-view) .top>.wallet:is([data-balance="large"],[data-balance="extra"]) .coin{display:none}
  #game#game:not(.town-view) .top .icon-button{width:30px;height:30px}
  #game#game:not(.town-view)>.bottom-nav button{flex-direction:column;gap:0;justify-content:center}
  #game#game:not(.town-view)>.bottom-nav .nav-icon{width:20px;height:20px;flex:0 0 20px}
  #game#game:not(.town-view)>.bottom-nav button b{font-size:8.5px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:100%;text-align:center}
  #game#game:not(.town-view)>.active-skills b{font-size:11px}
  #game#game:not(.town-view)>.active-skills small{font-size:9px}
- #game#game:not(.town-view)>.controls #actionBtn{width:min(150px,46vw)}
- #game#game:not(.town-view)>.journey-row{width:calc((100% - min(150px,46vw))/2 - 12px)}
 }
 
 /* v2.9.1 battle: the angler sits low in the middle of the reel overlay so the fish has room above his head */
@@ -163,4 +168,15 @@
  #game#game:not(.town-view)>.active-skills .skill-icon{grid-column:1;grid-row:1/3}
  #game#game:not(.town-view)>.active-skills b,
  #game#game:not(.town-view)>.active-skills small{grid-column:2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+
+#game.town-view #findsFishingBtn,#game#game:not(.town-view) #findsBtn,#game.battle-mode #findsFishingBtn{display:none}
+#game #findsFishingBtn{width:44px;height:44px;justify-self:center;align-self:center;box-shadow:none;border:1px solid #a9c9b6;border-radius:50%;background:#e1eee4;color:#214f43;touch-action:manipulation}
+#game #findsFishingBtn svg{width:23px;height:23px}
+@media(max-height:520px) and (orientation:landscape){
+ #game#game:not(.town-view):not(.battle-mode){grid-template-rows:46px 32px 30px 54px minmax(18px,1fr) 24px 48px 44px 44px}
+ #game:not(.town-view):not(.battle-mode)>.controls{display:grid;grid-template-columns:minmax(0,1fr) 44px 44px;gap:6px;padding:1px 9px}
+ #game:not(.town-view):not(.battle-mode)>.controls #actionBtn{grid-column:1;width:100%;max-width:210px;height:44px;justify-self:end}
+ #game:not(.town-view):not(.battle-mode)>.controls #findsFishingBtn{grid-column:2;position:relative}
+ #game:not(.town-view):not(.battle-mode)>.controls #skillBtn{grid-column:3;position:relative;inset:auto;width:44px;height:44px}
 }

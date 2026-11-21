@@ -15,7 +15,7 @@ export function findResult(items,missed=0,full=false){
  return `<section class="find-result"><strong>발견물</strong>${received.length?`<ul>${received.map(item=>`<li>${tile(item)} ${item.name} ×${fmt(items[item.id])}</li>`).join('')}</ul>`:''}${missed?`<p>가방이 가득 차 ${fmt(missed)}개를 담지 못했어요.</p>`:full?'<p>발견물 가방이 가득 찼어요.</p>':''}<button class="secondary" type="button" data-do="finds-open">발견물 가방 열기</button></section>`;
 }
 
-export function createFindsUI({button,body,getState,show,save,render,toast,canOpen,settle}){
+export function createFindsUI({buttons,body,getState,show,save,render,toast,canOpen,settle}){
  let page=0,shop=false,selection=null;
  const owned=s=>FIND_ITEMS.filter(item=>s.finds.items[item.id]>0);
  function open(view=shop){
@@ -73,7 +73,7 @@ export function createFindsUI({button,body,getState,show,save,render,toast,canOp
    if(gold)toast(`발견물 판매 · +${fmt(gold)} G`);
   }
  });
- button.addEventListener('click',()=>{
+ for(const button of buttons)button.addEventListener('click',()=>{
   if(!canOpen()){toast('낚시를 마친 뒤 발견물 가방을 열 수 있어요.');return;}
   page=0;
   selection=null;
@@ -81,9 +81,11 @@ export function createFindsUI({button,body,getState,show,save,render,toast,canOp
  });
  function update(){
   const s=getState(),count=findCount(s),capacity=findCapacity(s);
-  button.querySelector('span').hidden=!count;
-  button.setAttribute('aria-label',`발견물 가방 ${fmt(count)} / ${fmt(capacity)}칸`);
-  button.classList.toggle('finds-full',count>=capacity);
+  for(const button of buttons){
+   button.querySelector('span').hidden=!count;
+   button.setAttribute('aria-label',`발견물 가방 ${fmt(count)} / ${fmt(capacity)}칸`);
+   button.classList.toggle('finds-full',count>=capacity);
+  }
  }
  return {update,full:()=>findCount(getState())>=findCapacity(getState())};
 }

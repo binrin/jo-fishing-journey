@@ -230,12 +230,6 @@
 .find-result p{font-size:12px;margin:6px 0}
 .find-result button{font-size:13px;margin:6px 0 0}
 
-@media not all and (max-height:520px) and (orientation:landscape){
- #game#game:not(.town-view)>.wallet{margin-right:129px}
-}
-@media(max-width:350px){
- #game#game:not(.town-view)>.wallet{margin-right:119px}
-}
 .find-upgrade{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:10px;padding:8px 10px;border-radius:10px;background:#e3efe4}
 .find-upgrade small{display:block;color:#466152;font-size:12px}
 .find-upgrade button{flex:none}

@@ -68,7 +68,9 @@ export function raceMaterial(s,f,grade,region=s.region,automatic=false){
 export const prizeFor=(tier,rank,firstWin=true)=>Math.round(LEAGUES[tier].fee*([firstWin?2.5:1.4,.9,.6][rank-1]??0));
 export const raceBaitFor=tier=>LEAGUES[tier].bait;
 export const partPrice=(tier,slot)=>Math.round(LEAGUES[tier].fee*(slot==='booster'?5.8:4));
-export const upgradePrice=(tier,slot,level)=>Math.round(partPrice(tier,slot)*(.30+level*.125));
+// A cheaper first upgrade makes entry easier; high ranks cost a premium over a new part.
+const UPGRADE_PRICE_SHARE=[.20,.27,.35,.45,.58,.74,.92,1.12,1.36,1.65];
+export const upgradePrice=(tier,slot,level)=>Math.round(partPrice(tier,slot)*UPGRADE_PRICE_SHARE[level]);
 export const modCost=mods=>[5,10,20][mods];
 export const modPrice=(tier,slot,mods)=>Math.round(partPrice(tier,slot)*[.6,1.2,2.4][mods]);
 export const partEffect=(tier,maker,part)=>(1+tier*.30)*(1+part.level*.075)*2**part.mods*maker.scale;

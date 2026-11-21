@@ -1,5 +1,5 @@
 import {raceMaterial,restoreRace} from './race.js';
-import {restoreEquipment,equipmentStats,ensureEquipment,syncEquipment,EQUIPMENT_SUCCESS,enhancePrice} from './equipment.js';
+import {restoreEquipment,equipmentStats,ensureEquipment,syncEquipment,EQUIPMENT_SUCCESS,SLOTS,itemPrice} from './equipment.js';
 import {gameTime,activityWeight,weightedFish} from './ecology.js';
 import {availableFish,fishPeriod,fishWeight} from './catch-rules.js';
 import {advanceFishTravel} from './fish-travel.js';
@@ -11,7 +11,7 @@ import {ACTIVE_SLOTS,DEFAULT_ACTIVE_SKILLS,SKILL_BY_ID,activeSkillFamily} from '
 import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,REP_MAX,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff,rewardBoosts,boostMultiplier} from './systems.js';
 import {normalizeNickname} from './nickname.js';
 import {awardFind,emptyFinds,restoreFindCounts,restoreFinds} from './finds.js';
-export const VERSION='4.3.2',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
+export const VERSION='4.4.0',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
 export const WATER_NET=Object.freeze({name:'물빛 어망',dropChance:.01,durationMs:30*60*1000,trophyBonus:.10,ornamentalChance:.04});
 const emptyWaterNet=()=>({count:0,startedAt:0,until:0});
 export function waterNetRemaining(s,now=Date.now()){
@@ -47,7 +47,9 @@ export const capacity=s=>BOATS[s.boat].capacity;
 export function levelBonuses(s){const gained=playerLevel(s)-1;return {hp:gained*LEVEL_HP,power:gained/100,tension:gained*.003};}
 export const maxHP=s=>100+levelBonuses(s).hp+(s.skills.vitality||0)*15+(s.skills.recovery||0)*5+(mealBuff(s).maxHp||0);
 export const isNight=s=>gameTime(s).hour<6||gameTime(s).hour>=19;
-export const gearPrice=s=>repPrice(s,Math.round(enhancePrice(s.tackle,s.tackleUpgrade))||0);
+export const gearPrice=s=>s.tackleUpgrade<EQUIPMENT_SUCCESS.length
+ ?SLOTS.reduce((total,{id})=>total+repPrice(s,itemPrice(id,s.tackle,s.tackleUpgrade)),0)
+ :0;
 export const baitPrice=(s,id)=>Math.max(1,repPrice(s,Math.round(REGIONS[BOATS[s.boatLicense].region].bait*(BAITS.find(b=>b.id===id)?.factor||1))));
 export function spend(s,n){if(!Number.isFinite(n)||n<0||s.coins<n||s.debt>0)return false;s.coins-=n;s.stats.spent+=n;return true;}
 export function credit(s,n){n=Math.max(0,Math.round(n));s.stats.earned+=n;const debt=Math.min(s.debt,n);s.debt-=debt;s.coins+=n-debt;}

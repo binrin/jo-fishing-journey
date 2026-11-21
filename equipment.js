@@ -4,7 +4,13 @@ export const SLOTS=[{id:'rod',name:'낚싯대',share:.35,stat:'당기는 힘'},{
 export const equipmentName=(slot,tier)=>TACKLE[tier].name.replace(/ 세트$/,'')+' '+SLOTS.find(x=>x.id===slot).name;
 export const itemPower=(tier,rank=0)=>1.8**tier*(1+rank*.1);
 export const EQUIPMENT_SUCCESS=[90,70,50,30,10];
-export const enhancePrice=(tier,rank)=>TACKLE[tier].upgrades[rank]*(.45+.55*EQUIPMENT_SUCCESS[rank]/100);
+const ENHANCEMENT_SHARES=[.06,.0825,.105,.135,.165];
+export function enhancePrice(tier,rank){
+ const {total,price}=TACKLE[tier];
+ // The former endgame set had a larger budget before regions 11–30 were added.
+ const budget=(total-price)*(tier===9?.65:1);
+ return budget*ENHANCEMENT_SHARES[rank];
+}
 export const itemPrice=(slot,tier,rank=null)=>Math.round((rank===null?TACKLE[tier].price:enhancePrice(tier,rank))*SLOTS.find(x=>x.id===slot).share);
 export function ensureEquipment(s){
  if(!s.equipment)s.equipment=Object.fromEntries(SLOTS.map(x=>[x.id,{equipped:s.tackle,owned:{[s.tackle]:s.tackleUpgrade}}]));

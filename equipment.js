@@ -3,7 +3,9 @@ import {repPrice} from './systems.js';
 export const SLOTS=[{id:'rod',name:'낚싯대',share:.35,stat:'당기는 힘'},{id:'reel',name:'릴',share:.22,stat:'감기 효율'},{id:'float',name:'찌',share:.16,stat:'챔질 여유'},{id:'line',name:'줄',share:.17,stat:'긴장 억제'},{id:'hook',name:'바늘',share:.10,stat:'관통력'}];
 export const equipmentName=(slot,tier)=>TACKLE[tier].name.replace(/ 세트$/,'')+' '+SLOTS.find(x=>x.id===slot).name;
 export const itemPower=(tier,rank=0)=>1.8**tier*(1+rank*.1);
-export const itemPrice=(slot,tier,rank=null)=>Math.round((rank===null?TACKLE[tier].price:TACKLE[tier].upgrades[rank])*SLOTS.find(x=>x.id===slot).share);
+export const EQUIPMENT_SUCCESS=[90,70,50,30,10];
+export const enhancePrice=(tier,rank)=>TACKLE[tier].upgrades[rank]*(.45+.55*EQUIPMENT_SUCCESS[rank]/100);
+export const itemPrice=(slot,tier,rank=null)=>Math.round((rank===null?TACKLE[tier].price:enhancePrice(tier,rank))*SLOTS.find(x=>x.id===slot).share);
 export function ensureEquipment(s){
  if(!s.equipment)s.equipment=Object.fromEntries(SLOTS.map(x=>[x.id,{equipped:s.tackle,owned:{[s.tackle]:s.tackleUpgrade}}]));
  return s.equipment;
@@ -22,7 +24,7 @@ export function equipmentStats(s){const e=s.equipment||ensureEquipment({...s});c
  const rod=relative('rod'),reel=relative('reel'),hook=relative('hook'),line=relative('line'),float=relative('float');
  return {power:SLOTS.every(x=>e[x.id].equipped!==null)?Math.max(.12,.85*rod**.5*reel**.3*hook**.2):0,tension:Math.max(.55,Math.min(1.5,1/Math.max(.1,line)**.22)),biteBonus:e.float.equipped===null?0:Math.min(1.5,.5*Math.sqrt(float))};
 }
-export function changeEquipment(s,action,slot,tier){
+export function changeEquipment(s,action,slot,tier,rng=Math.random){
  if(!SLOTS.some(x=>x.id===slot)||!Number.isInteger(tier)||!TACKLE[tier])return false;
  const x=ensureEquipment(s)[slot],rank=x.owned[tier],level=playerLevel(s);
  if(action==='equip'){if(rank===undefined||level<TACKLE[tier].level)return false;x.equipped=tier;}
@@ -30,7 +32,9 @@ export function changeEquipment(s,action,slot,tier){
  else if(action==='buy'||action==='enhance'){
   if(action==='buy'&&(rank!==undefined||tier>0&&x.owned[tier-1]!==5||level<TACKLE[tier].level))return false;
   if(action==='enhance'&&(rank===undefined||rank>=5||level<gearRequiredLevel(tier,rank+1)))return false;
-  const price=repPrice(s,itemPrice(slot,tier,action==='buy'?null:rank));if(s.debt>0||s.coins<price)return false;s.coins-=price;s.stats.spent+=price;x.owned[tier]=action==='buy'?0:rank+1;
+  const price=repPrice(s,itemPrice(slot,tier,action==='buy'?null:rank));if(s.debt>0||s.coins<price)return false;s.coins-=price;s.stats.spent+=price;
+  if(action==='enhance'&&rng()*100>=EQUIPMENT_SUCCESS[rank])return 'failed';
+  x.owned[tier]=action==='buy'?0:rank+1;
  }else return false;
  syncEquipment(s);return true;
 }

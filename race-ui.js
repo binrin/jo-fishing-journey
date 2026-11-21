@@ -70,7 +70,7 @@ function shop(s,tier,selected){
  <div class="race-wallet"><span>보유 금화 <b>${fmt(s.coins)} G</b></span><span>현재 ${part.name} · <b>${active}</b></span></div>
  <div class="race-chooser race-grade-chooser" role="group" aria-label="부품 등급 선택">${LEAGUES.map(l=>option(l.name,l.id+':'+part.id,l.id===tier)).join('')}</div>
  <div class="race-chooser" role="group" aria-label="레이싱 부품 선택">${PARTS.map(p=>option(p.name,tier+':'+p.id,p===part)).join('')}</div>
- <div class="race-showcase"><img src="assets/race-parts/${part.id}.webp" alt="" draggable="false"><div><h3>${league.name} ${part.name}</h3><p>${part.description}</p><small>${league.name} ${part.material} <b>${fmt(materials)}개 보유</b><br>${league.water+1}~${league.water+5}번 낚시터에서 획득</small></div></div>
+ <div class="race-showcase"><img src="assets/race-parts/${part.id}-${tier}.webp" alt="" draggable="false"><div><h3>${league.name} ${part.name}</h3><p>${part.description}</p><small>${league.name} ${part.material} <b>${fmt(materials)}개 보유</b><br>${league.water+1}~${league.water+5}번 낚시터에서 획득</small></div></div>
  ${MAKERS.map(m=>{
   const key=partKey(tier,m.id),owned=group.owned[key],equipped=group.active===key,id=[tier,part.id,m.id].join(':');
   const preview=projectedStats(s,r,part,key,owned??{level:0,mods:0});

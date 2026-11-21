@@ -5,34 +5,22 @@
  <section id="townMap" class="town-map" aria-labelledby="harborTitle">
   <div class="harbor-heading">
    <div class="harbor-title"><h2 id="harborTitle">물결항</h2><b id="playerBadge">초보 낚시꾼</b></div>
-   <div class="harbor-health"><span id="townHP">체력 100 / 100</span></div>
+   <div class="harbor-heading-tools"><span id="townHP" class="harbor-health">체력 100 / 100</span><button class="harbor-collection" type="button" data-town="collection">물고기 도감</button></div>
   </div>
   <div class="harbor-board">
    <div class="harbor-chart">
-    <button type="button" class="harbor-hotspot" data-town="shop" aria-label="장비 · 미끼"></button>
-    <button type="button" class="harbor-hotspot" data-town="market" aria-label="물고기 시장"></button>
-    <button type="button" class="harbor-hotspot" data-town="skills" aria-label="낚시 학교"></button>
-    <button type="button" class="harbor-hotspot" data-town="tank" aria-label="내 수족관"></button>
-    <button type="button" class="harbor-hotspot" data-town="restaurant" aria-label="바다 식당"></button>
-    <button type="button" class="harbor-hotspot" data-town="home" aria-label="내 집"></button>
-    <button type="button" class="harbor-hotspot" data-town="boats" aria-label="선박 거래소"></button>
-    <button type="button" class="harbor-hotspot" data-town="race" aria-label="낚시배 레이스"></button>
-    <button type="button" class="harbor-hotspot" data-town="map" aria-label="낚시 지도 · 출항"></button>
+    <button type="button" class="harbor-hotspot" data-town="shop"><span class="harbor-label">장비 · 미끼</span></button>
+    <button type="button" class="harbor-hotspot" data-town="market"><span class="harbor-label">물고기 시장</span></button>
+    <button type="button" class="harbor-hotspot" data-town="skills"><span class="harbor-label">낚시 학교</span></button>
+    <button type="button" class="harbor-hotspot" data-town="tank"><span class="harbor-label">내 수족관</span></button>
+    <button type="button" class="harbor-hotspot" data-town="restaurant"><span class="harbor-label">바다 식당</span></button>
+    <button type="button" class="harbor-hotspot" data-town="home"><span class="harbor-label">내 집</span></button>
+    <button type="button" class="harbor-hotspot" data-town="boats"><span class="harbor-label">선박 거래소</span></button>
+    <button type="button" class="harbor-hotspot" data-town="race"><span class="harbor-label">낚시배 레이스</span></button>
+    <button type="button" class="harbor-hotspot" data-town="map"><span class="harbor-label">부두 · 출항</span></button>
    </div>
   </div>
-  <div class="harbor-facilities" role="group" aria-label="마을 시설">
-   <button type="button" class="harbor-facility" data-town="skills"><span class="harbor-facility-icon" aria-hidden="true"><svg width="20" height="20" aria-hidden="true"><use href="assets/harbor-icons.svg#skills"></use></svg></span><span class="harbor-facility-text"><b>낚시 학교</b><small id="mapSP">스킬 배우기</small></span></button>
-   <button type="button" class="harbor-facility" data-town="restaurant"><span class="harbor-facility-icon" aria-hidden="true"><svg width="20" height="20" aria-hidden="true"><use href="assets/harbor-icons.svg#restaurant"></use></svg></span><span class="harbor-facility-text"><b>바다 식당</b><small>음식 · 버프</small></span></button>
-   <button type="button" class="harbor-facility" data-town="home"><span class="harbor-facility-icon" aria-hidden="true"><svg width="20" height="20" aria-hidden="true"><use href="assets/harbor-icons.svg#home"></use></svg></span><span class="harbor-facility-text"><b>내 집</b><small id="mapHome">단칸방 · 잠자기</small></span></button>
-   <button type="button" class="harbor-facility" data-town="boats"><span class="harbor-facility-icon" aria-hidden="true"><svg width="20" height="20" aria-hidden="true"><use href="assets/harbor-icons.svg#boats"></use></svg></span><span class="harbor-facility-text"><b>선박 거래소</b><small>배 구입 · 판매</small></span></button>
-   <button type="button" class="harbor-facility" data-town="race"><span class="harbor-facility-icon" aria-hidden="true"><svg width="20" height="20" aria-hidden="true"><use href="assets/harbor-icons.svg#race"></use></svg></span><span class="harbor-facility-text"><b>낚시배 레이스</b><small>대회 접수 · 부품점</small></span></button>
-  </div>
-  <div class="harbor-actions">
-   <button id="autoPill" class="auto-pill" type="button" hidden></button>
-   <button class="harbor-departure" data-town="map" type="button">
-    <span class="harbor-departure-icon" aria-hidden="true"><svg width="24" height="24"><use href="assets/harbor-icons.svg#map"></use></svg></span><span><b>낚시 지도 · 출항</b><small id="mapBoat">조각배 · 20칸</small></span><span class="harbor-chevron" aria-hidden="true">›</span>
-   </button>
-  </div>
+  <div class="harbor-actions"><button id="autoPill" class="auto-pill" type="button" hidden></button></div>
  </section>
  <section id="scene" class="scene" aria-label="낚시터">
   <div class="night-shade"></div><div class="scene-top"><div class="location"><small id="chapter">첫 번째 여행</small><b id="location">솔바람 개울</b></div><div class="scene-chips"><button id="clockBtn" class="weather">☀ 낮 · 산들바람</button><button id="mealBtn" class="meal-chip" aria-label="도시락 가방">🍙 식사</button><button id="autoBtn" class="meal-chip auto-chip" aria-label="자동 낚시">🤖 자동</button></div></div>
@@ -50,7 +38,7 @@
  </section>
  <div class="journey-row"><button id="baitBtn"><span id="baitText">🪱 기본 미끼</span><small>변경 ›</small></button><button id="bossBtn"><span>✦ 지역 의뢰</span><small id="bossHint">성장 목표</small></button></div>
  <section class="instruments"><div class="meter-row"><label>내 체력 <b id="heroValue">100</b><span class="bar"><i id="heroBar"></i></span></label><label>물고기 <b id="fishValue">—</b><span class="bar fish-bar"><i id="fishBar"></i></span></label></div><div class="tension"><span>줄 긴장</span><div class="bar"><i id="tensionBar"></i><span class="danger-mark"></span></div><b id="tensionValue">0%</b></div></section>
- <div class="active-skills" aria-label="장착 액티브 스킬"><button id="active0"><b>강타</b><small>미습득</small></button><button id="active1"><b>탄력</b><small>미습득</small></button><button id="active2"><b>충격</b><small>미습득</small></button></div>
+ <div class="active-skills" aria-label="장착 액티브 스킬"><button id="active0"><b>강타</b><small>미습득</small></button><button id="active1"><b>탄력</b><small>미습득</small></button><button id="active2"><b>충격</b><small>미습득</small></button><button id="active3"><b>회복</b><small>미습득</small></button></div>
  <div class="instruction" id="instruction" role="status">낚시 시작을 누르세요</div>
  <section class="controls" aria-label="낚시 조작"><button id="leftBtn" class="reel" aria-label="왼쪽으로 당기기"><b>◀</b><small>왼쪽 당기기</small></button><button id="actionBtn" class="action"><b>낚시 시작</b><small>방향 · 힘 · 챔질</small></button><button id="rightBtn" class="reel" aria-label="오른쪽으로 당기기"><b>▶</b><small>오른쪽 당기기</small></button><div class="reel-status" id="reelStatus" aria-live="off">줄 대기<small>수면 터치 → 감기</small></div><button id="skillBtn" class="skill" aria-label="스킬 학교"><span>✦</span><small>스킬</small><i id="skillFill"></i></button></section>
  <nav class="bottom-nav" aria-label="게임 메뉴"><button data-panel="town"><span class="nav-icon compass"><svg class="harbor-nav-icon" width="21" height="21" aria-hidden="true"><use href="assets/harbor-icons.svg#map"></use></svg></span><b>마을 지도</b></button><button data-panel="shop"><span class="nav-icon rod"><svg class="harbor-nav-icon" width="21" height="21" aria-hidden="true"><use href="assets/harbor-icons.svg#shop"></use></svg></span><b>낚시 장비</b></button><button data-panel="market"><span class="nav-icon chest"><svg class="harbor-nav-icon" width="21" height="21" aria-hidden="true"><use href="assets/harbor-icons.svg#market"></use></svg></span><b>바로 판매</b><i id="sellDot" hidden></i></button><button data-panel="collection"><span class="nav-icon fishicon"><svg class="harbor-nav-icon" width="21" height="21" aria-hidden="true"><use href="assets/harbor-icons.svg#skills"></use></svg></span><b>물고기 도감</b></button><button data-panel="tank"><span class="nav-icon bucket"><svg class="harbor-nav-icon" width="21" height="21" aria-hidden="true"><use href="assets/harbor-icons.svg#tank"></use></svg></span><b>내 수족관</b></button></nav>

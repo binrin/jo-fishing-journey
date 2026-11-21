@@ -5,8 +5,8 @@
 import {raceMaterial} from './race.js';
 import {FISH} from './data.js';
 import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice,gainXP} from './engine.js';
-import {catchXP,BAITS,playerLevel} from './progression.js';
-import {luck,regionProfile} from './systems.js';
+import {catchXP,BAITS,playerLevel,activeSkillFamily} from './progression.js';
+import {luck,regionProfile,boostMultiplier,addRep} from './systems.js';
 // Auto fishing uses the basic (first-grade) bait of the spot's recommended family, buying one at a time
 // with coins when none is left. A run has no time limit: it lasts until the coins run out or it is stopped.
 export function autoBait(s){const fam=regionProfile(s.region).recommended,b=BAITS.find(x=>x.id===fam+'1');return b&&playerLevel(s)>=(b.level||1)?b.id:'worm1';}
@@ -42,7 +42,16 @@ function ordinaryFish(s,rng){
  if(f.hp[0]>0&&rng()<autoRates(s).trophy)g=0;
  return {f,g};
 }
-export function autoAttemptSeconds(s,f,g){return AUTO_CAST+waitSeconds(s)+fightPlan(s,f,g).expected*.8+AUTO_RESULT;}
+const OFFENSIVE_SKILLS=new Set(['strike','shock','surge','bleed','execute']);
+function autoSkillBonus(s){
+ const families=new Map();
+ for(const id of s.equippedSkills){
+  const family=activeSkillFamily(id);
+  if(OFFENSIVE_SKILLS.has(family))families.set(family,Math.max(families.get(family)||0,s.skills[id]||0));
+ }
+ return Math.min(.08,[...families.values()].reduce((total,rank)=>total+rank*.01,0));
+}
+export function autoAttemptSeconds(s,f,g){return AUTO_CAST+waitSeconds(s)+fightPlan(s,f,g).expected*.8*(1-autoSkillBonus(s))+AUTO_RESULT;}
 // Average seconds per fish at the current spot (for the estimate shown before starting).
 export function autoPace(s){const pool=FISH.filter(x=>x.regions.includes(s.region)&&!x.boss&&!x.ornamental);if(!pool.length)return 60;
  return pool.reduce((a,f)=>a+autoAttemptSeconds(s,f,f.hp[1]>0?1:2),0)/pool.length;}
@@ -62,8 +71,9 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
   if(a.acc<a.next.dur)break;
   a.acc-=a.next.dur;a.ran=(a.ran||0)+a.next.dur;const f=FISH[a.next.id],g=a.next.g;a.next=null;
   if(!f||f.boss||f.ornamental||rng()>AUTO_SUCCESS){a.missed++;got.missed++;continue;}
-  const rate=autoRates(s),gold=Math.max(1,Math.round(quote(s,f,g)*rate.sale)),xp=Math.max(1,Math.round(catchXP(s.region,f,g)*rate.xp));if(g===0){a.trophies=(a.trophies||0)+1;got.trophies++;}
-  credit(s,gold);gainXP(s,xp);s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;raceMaterial(s,f,g,a.region,true);
+  const caughtAt=now-a.acc*1000;
+  const rate=autoRates(s),gold=Math.max(1,Math.round(quote(s,f,g)*rate.sale)),xp=Math.max(1,Math.round(catchXP(s.region,f,g)*rate.xp))*boostMultiplier(s,'xp',caughtAt);if(g===0){a.trophies=(a.trophies||0)+1;got.trophies++;}
+  credit(s,gold);gainXP(s,xp);addRep(s,.1,caughtAt);s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;raceMaterial(s,f,g,a.region,true);
   a.caught++;a.gold+=gold;a.xp+=xp;got.caught++;got.gold+=gold;got.xp+=xp;got.ids[f.id]=(got.ids[f.id]||0)+1;
  }
  return got;

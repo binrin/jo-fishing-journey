@@ -1,14 +1,16 @@
 import {ensureEquipment,fullyEquipped,changeEquipment,equipmentStats,equipmentName} from './equipment.js';
 import {createRaceUI} from './race-ui.js';
 import {credit} from './engine.js';
+import {loadCurrentSave,keepRewardHistory,discardLegacySaves} from './save-generation.js';
+import {REWARD_BOOSTS,BOOST_DURATION,useRewardBoost} from './systems.js';
 import {celebrate} from './celebrate.js';
 import {autoRunning,canStartAuto,startAuto,stopAuto,autoTick,autoPace,unseenAutoResult,autoRates,autoBait,AUTO_SALE,AUTO_XP} from './auto.js';
 import {gameTime,PERIODS,waitUntil,activityWeight,scheduleLabel,ecology} from './ecology.js';
 import {castTargets,castResult,fishPeriod,weightLabel} from './catch-rules.js';
 import {castLanding} from './water-layout.js';
 import {FISH,REGIONS} from './data.js';
-import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,gearPrice,baitPrice,upgradeGear,gate,travel,finish,chooseFish,fishGrade,addCatch,sell,validateSave,baitCount,chargeBait,makeFight,fightStep,tapStrike,TAP_COMBO_MAX,skill,SKILL_COOLDOWN,critical,spend,maxHP,buyBait,emergencyBait,buyTackle,buyBoat,selectBoat,sellBoat,sleep,upgradeHome,transferFish,learnSkill,equipSkill,legendReady,resetSkills,waitSeconds,fightPlan} from './engine.js';
-import {BOATS,TACKLE,HOMES,SKILLS,BAITS,TROPHY_BAIT,MAX_LEVEL,playerLevel,xpForLevel,availableSP} from './progression.js';
+import {VERSION,TITLE,SAVE_KEY,STARTER,region,capacity,isNight,baitPrice,gate,travel,finish,chooseFish,fishGrade,addCatch,sell,validateSave,baitCount,chargeBait,makeFight,fightStep,tapStrike,TAP_COMBO_MAX,skill,skillCooldown,SKILL_COOLDOWN,critical,spend,maxHP,buyBait,emergencyBait,buyBoat,selectBoat,sellBoat,sleep,upgradeHome,transferFish,learnSkill,equipSkill,legendReady,resetSkills,waitSeconds,fightPlan} from './engine.js';
+import {BOATS,TACKLE,HOMES,SKILLS,BAITS,TROPHY_BAIT,MAX_LEVEL,playerLevel,xpForLevel,ACTIVE_SLOTS,SKILL_BY_ID,activeSkillFamily} from './progression.js';
 import {panelContent,boatArt} from './panels.js';
 import {sprite,fishStyle,waterStyle,waterVars} from './art.js';
 import {skillIcon} from './skill-icons.js';
@@ -21,8 +23,30 @@ const reelInput=createReelInput();
 import {createCombatFX} from './effects.js';
 import {TOURNAMENTS,TOURNAMENT_CASTS,tournamentEntryIssue,waitForTournament,startTournament,beginTournamentCast,contestCastResult,finishTournament,tournamentPanel,tournamentResults,createTournamentFloats} from './tournament.js';
 const $=id=>document.getElementById(id), fmt=n=>Math.round(n).toLocaleString('ko-KR'), esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let state=STARTER(),storageWarning=false,loadError=false;
-try{const raw=localStorage.getItem(SAVE_KEY);if(raw){try{state=validateSave(JSON.parse(raw));}catch{loadError=true;try{localStorage.setItem(SAVE_KEY+'-backup-'+Date.now(),raw);}catch{}}}}catch{loadError=true;}
+let state=STARTER(),storageWarning=false,loadError=false,savedRaw=null,sessionEnded=false;
+if(navigator.locks){
+ const acquire=options=>new Promise(resolve=>{
+  navigator.locks.request(SAVE_KEY,options,lock=>{
+   if(!lock){resolve(false);return;}
+   resolve(true);
+   return new Promise(release=>window.addEventListener('pagehide',()=>{save();sessionEnded=true;release();},{once:true}));
+  }).catch(()=>resolve(true));
+ });
+ if(!await acquire({ifAvailable:true})){
+  $('modalTitle').textContent='다른 탭에서 낚시 중이에요';
+  $('modalBody').textContent='기존 게임 탭을 닫으면 여기에서 이어서 플레이할 수 있어요.';
+  $('closeModal').hidden=true;
+  const preventClose=e=>e.preventDefault();
+  $('modal').addEventListener('cancel',preventClose);
+  $('modal').showModal();
+  await acquire({});
+  $('modal').removeEventListener('cancel',preventClose);
+  $('modal').close();
+  $('closeModal').hidden=false;
+ }
+ window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
+}
+try{({state,raw:savedRaw,loadError}=loadCurrentSave(localStorage));}catch{loadError=true;}
 ensureEquipment(state);
 let view='town';
 let castAim=.5,castTarget={x:500,y:670},castFlight=1;
@@ -34,7 +58,19 @@ const racing=createRaceUI({getState:()=>state,body,modal,show,save,render,toast,
 const fx=createCombatFX({scene:$('scene'),layer:$('combatEffects'),target:$('wildFish'),getState:()=>state});let hitClock=0;
 const tournamentFloats=createTournamentFloats($('scene'));
 const reelFeedback=createReelFeedback({sound,vibrate:buzz,cancelVibration:()=>{if(navigator.vibrate)navigator.vibrate(0);}});let dangerState='safe';
-function save(){if(fight)state.hp=Math.max(0,fight.hero);state.savedAt=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(state));}catch{if(!storageWarning){storageWarning=true;toast('저장 공간이 부족해요. 설정에서 저장 파일을 내보내 주세요.',5000);}}}
+function save(){
+ if(sessionEnded)return false;
+ if(fight)state.hp=Math.max(0,fight.hero);
+ state.savedAt=Date.now();
+ try{
+  if(localStorage.getItem(SAVE_KEY)!==savedRaw){location.reload();return false;}
+  const raw=JSON.stringify(state);
+  localStorage.setItem(SAVE_KEY,raw);savedRaw=raw;return true;
+ }catch{
+  if(!storageWarning){storageWarning=true;toast('저장 공간이 부족해요. 설정에서 저장 파일을 내보내 주세요.',5000);}
+  return false;
+ }
+}
 function toast(text,ms=2600){clearTimeout(toastTimer);{const t=$('toast'),host=modal.open?modal:document.body;if(t.parentElement!==host)host.append(t);}$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,ms);}
 function sound(type='tap'){if(state.muted)return;try{
  if(['reel-wind','reel-release','line-danger'].includes(type)){
@@ -49,9 +85,21 @@ function artPos(id){return `${(id%2)*100}% ${Math.floor(id/2)*25}%`;}
 let scrollTarget=0;
 modal.setAttribute('aria-labelledby','modalTitle');
 $('modalTitle').tabIndex=-1;
-function show(title,html,name=''){releaseInput();const same=modal.open&&name&&name===panel,top=body.scrollTop,opened=same?[...body.querySelectorAll('details')].map(d=>d.open):null;panel=name;$('closeModal').hidden=name==='nickname-first';$('modalTitle').autofocus=name==='nickname-first';$('modalTitle').textContent=title;body.innerHTML=html;if(same){body.querySelectorAll('details').forEach((d,i)=>{if(opened[i]!==undefined)d.open=opened[i];});}if(!modal.open)modal.showModal();if(name==='nickname-first')$('modalTitle').focus({preventScroll:true});else $('closeModal').focus({preventScroll:true});scrollTarget=same?top:0;body.scrollTop=scrollTarget;requestAnimationFrame(()=>body.scrollTop=scrollTarget);}
+function show(title,html,name=''){releaseInput();const same=modal.open&&name&&name===panel,top=body.scrollTop,opened=same?[...body.querySelectorAll('details')].map(d=>d.open):null;panel=name;$('closeModal').hidden=(name==='nickname-first'||name==='v4-reset');$('modalTitle').autofocus=(name==='nickname-first'||name==='v4-reset');$('modalTitle').textContent=title;body.innerHTML=html;if(same){body.querySelectorAll('details').forEach((d,i)=>{if(opened[i]!==undefined)d.open=opened[i];});}if(!modal.open)modal.showModal();if((name==='nickname-first'||name==='v4-reset'))$('modalTitle').focus({preventScroll:true});else $('closeModal').focus({preventScroll:true});scrollTarget=same?top:0;body.scrollTop=scrollTarget;requestAnimationFrame(()=>body.scrollTop=scrollTarget);}
+function openResetNotice(){
+ show('4.0 업데이트로 새로 시작해요',`<p>새 낚시일지를 시작하면 이 브라우저에 보관된 기존 낚시 기록, 장비, 금화와 도감이 초기화돼요. 확인한 뒤 닉네임을 등록해 주세요.</p><div class="notice">기존 이용자 보상으로 경험치 2배권과 평판 2배권을 1개씩 받았어요. 설정의 업데이트 보상에서 원하는 때에 사용하면 각각 24시간 동안 효과가 적용돼요.</div><p>4.0 이전 저장 파일은 새 일지에서 가져올 수 없어요.</p><button class="primary" data-do="v4-reset-confirm">초기화하고 새 낚시일지 시작</button>`,'v4-reset');
+}
+function openBoosts(){
+ const now=Date.now();
+ const items=REWARD_BOOSTS.map(({id,name})=>{
+  const {from,count}=state.rewardBoosts[id],expires=from+BOOST_DURATION;
+  const status=count?'미사용 · 보유 1개':from&&expires>now?'사용 중 · 보유 0개 · '+new Date(expires).toLocaleString('ko-KR')+' 종료':from?'효과 종료 · 보유 0개':'보유 0개';
+  return `<div class="setting-row"><div><b>${name}</b><span>${status}</span></div><button data-do="boost-use" data-id="${id}" ${count?'':'disabled'}>사용</button></div>`;
+ }).join('');
+ show('업데이트 보상',`<p>사용한 시점부터 각각 24시간 동안 수동·자동 낚시에서 얻는 경험치 또는 평판이 2배가 돼요. 평판 2배는 시장에서 얻는 평판에도 적용돼요.</p>${items}<button class="secondary" data-do="settings">설정으로 돌아가기</button>`,'boosts');
+}
 function leavePanel(){
- if(panel==='nickname-first')return;
+ if(panel==='nickname-first'||panel==='v4-reset')return;
  if(panel==='nickname-edit'){openPanel('settings');return;}
  if(panel==='import'){
   pendingImport=null;
@@ -73,7 +121,7 @@ function openNickname(edit=false){
   <p class="muted" id="nicknameHint">글자와 숫자로 시작하는 1~${NICKNAME_LIMIT}자. 공백, 밑줄, 하이픈도 쓸 수 있어요.</p>
   <p id="nicknameError" class="nickname-error" role="alert" hidden></p>
   <button class="primary" type="submit">${edit?'닉네임 저장':'수첩에 기록하기'}</button>
-  ${edit?'<button class="secondary" type="button" data-do="settings">취소</button>':'<button class="secondary" type="button" data-do="import">기존 저장 파일 가져오기</button>'}
+  ${edit?'<button class="secondary" type="button" data-do="settings">취소</button>':'<button class="secondary" type="button" data-do="import">4.0 저장 파일 가져오기</button>'}
  </form>`,edit?'nickname-edit':'nickname-first');
  const form=body.querySelector('.nickname-form'),input=$('nicknameInput'),error=$('nicknameError');
  let composing=false;
@@ -104,7 +152,7 @@ function resumeNamedGame(){
 function renderAuto(){const on=autoRunning(state),a=state.auto,btn=$('autoBtn'),ov=$('autoOverlay'),pill=$('autoPill');if(pill){pill.hidden=!on;if(on)pill.innerHTML=`<i></i><b>🤖 자동 낚시 중</b><span>${REGIONS[a.region].display||REGIONS[a.region].name} · ${fmt(a.caught)}마리 · +${fmt(a.gold)} G</span>`;}if(btn){btn.textContent=on?`🤖 ${fmt(a.caught)}마리`:'🤖 자동';btn.classList.toggle('active',on);}
  if(ov){ov.hidden=!(on&&view==='fish');if(on)ov.innerHTML=`<b>🤖 자동 낚시 중</b><span>${fmt(a.caught)}마리 · +${fmt(a.gold)} G · +${fmt(a.xp)} EXP</span><small>미끼 자동 구매 ${fmt(a.bought||0)}개 · 브라우저를 닫아도 계속돼요</small><button data-do="auto-stop" class="small-button">멈추기</button>`;}}
 function render(){renderAuto();
- const lvl=playerLevel(state);$('headerProgress').textContent=`Lv.${lvl} · ${lvl>=MAX_LEVEL?'MAX':`EXP ${fmt(state.xp-xpForLevel(lvl))} / ${fmt(xpForLevel(lvl+1)-xpForLevel(lvl))}`}`;$('game').classList.toggle('town-view',view==='town');$('playerBadge').textContent=state.nickname||`${lvl>=95?'전설에 도전하는 낚시꾼':lvl>=70?'대양의 명인':lvl>=50?'신비의 바다 탐험가':lvl>=25?'바다의 숙련자':'성장하는 낚시꾼'}`;$('playerBadge').title=state.nickname;$('townHP').textContent=`체력 ${Math.ceil(state.hp)} / ${maxHP(state)}`;$('xpBar').style.width=`${lvl>=MAX_LEVEL?100:(state.xp-xpForLevel(lvl))/(xpForLevel(lvl+1)-xpForLevel(lvl))*100}%`;$('mapSP').textContent=`스킬 포인트 ${availableSP(state)} SP`;$('mapHome').textContent=`${HOMES[state.home].name} · 잠자기`;$('mapBoat').textContent=`${BOATS[state.boat].name} · ${capacity(state)}칸`;
+ const lvl=playerLevel(state);$('headerProgress').textContent=`Lv.${lvl} · ${lvl>=MAX_LEVEL?'MAX':`EXP ${fmt(state.xp-xpForLevel(lvl))} / ${fmt(xpForLevel(lvl+1)-xpForLevel(lvl))}`}`;$('game').classList.toggle('town-view',view==='town');$('playerBadge').textContent=state.nickname||`${lvl>=95?'전설에 도전하는 낚시꾼':lvl>=70?'대양의 명인':lvl>=50?'신비의 바다 탐험가':lvl>=25?'바다의 숙련자':'성장하는 낚시꾼'}`;$('playerBadge').title=state.nickname;$('townHP').textContent=`체력 ${Math.ceil(state.hp)} / ${maxHP(state)}`;$('xpBar').style.width=`${lvl>=MAX_LEVEL?100:(state.xp-xpForLevel(lvl))/(xpForLevel(lvl+1)-xpForLevel(lvl))*100}%`;
 
  const r=region(state),night=isNight(state);if(state.meal&&!activeMeal(state)){state.meal=null;state.hp=Math.min(state.hp,maxHP(state));}{const m=activeMeal(state),mb=$('mealBtn');if(mb){const rg=activeRegen(state);mb.textContent=(m?`${m.icon} ${Math.ceil(m.left/60)}분`:rg?`${rg.food?.icon||'🍙'} 회복`:'🍙 식사')+(rg?` 💚${Math.ceil(rg.left)}초`:'');mb.classList.toggle('active',Boolean(m||rg));}}$('coins').textContent=fmt(state.coins);$('bagCount').textContent=`${state.bag.length} / ${capacity(state)}`;$('debt').hidden=!state.debt;$('debt').textContent=`미끼 외상 ${fmt(state.debt)}`;$('location').textContent=r.display||r.name;$('chapter').textContent=`CHAPTER ${String(state.region+1).padStart(2,'0')} / ${REGIONS.length}`;$('scene').style.cssText=waterVars(state.region);$('scene').classList.toggle('night',night);$('clockBtn').textContent=`${night?'☾':'☀'} ${gameTime(state).label} ${gameTime(state).name}`;$('scene').dataset.period=PERIODS[gameTime(state).period].id;
  $('sellDot').hidden=!state.bag.length;$('baitText').textContent=`${baitInfo(state.bait).icon} ${baitInfo(state.bait).name}`;
@@ -179,8 +227,8 @@ for(const surface of [water]){
 }
 $('skillBtn').onclick=()=>openPanel('skills');
 $('homeBtn').onclick=goTown;document.querySelectorAll('[data-town]').forEach(b=>b.onclick=()=>openPanel(b.dataset.town));
-[0,1,2].forEach(i=>$('active'+i).onclick=()=>useActive(i));
-document.addEventListener('keydown',e=>{if(view==='town'||modal.open||e.repeat)return;if(e.code==='Space'){e.preventDefault();action();}if(phase==='fight'&&!paused){if(e.key==='ArrowLeft'){e.preventDefault();reelInput.key(-1);input=reelInput.input;}if(e.key==='ArrowRight'){e.preventDefault();reelInput.key(1);input=reelInput.input;}if(['1','2','3'].includes(e.key))useActive(Number(e.key)-1);if(e.key.toLowerCase()==='s')useActive(0);}});document.addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){reelInput.key(0);input=reelInput.input;}});
+ACTIVE_SLOTS.forEach(i=>$('active'+i).onclick=()=>useActive(i));
+document.addEventListener('keydown',e=>{if(view==='town'||modal.open||e.repeat)return;if(e.code==='Space'){e.preventDefault();action();}if(phase==='fight'&&!paused){if(e.key==='ArrowLeft'){e.preventDefault();reelInput.key(-1);input=reelInput.input;}if(e.key==='ArrowRight'){e.preventDefault();reelInput.key(1);input=reelInput.input;}if(ACTIVE_SLOTS.includes(Number(e.key)-1))useActive(Number(e.key)-1);if(e.key.toLowerCase()==='s')useActive(0);}});document.addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){reelInput.key(0);input=reelInput.input;}});
 function completeContestCast(size=0){
  if(!contestCastResult(state,size))return false;
  return showContestResult();
@@ -229,7 +277,8 @@ function openPanel(name){
  else if(name==='market'){for(const id of [...saleSel])if(!state.bag.some(x=>x.uid===id))saleSel.delete(id);const gross=state.bag.reduce((a,f)=>a+f.value,0),rf=repFactor(state),hc=haggleChances(state);
   show('물고기 시장',`<div class="notice"><b>${state.bag.length}마리 · 기준가 ${fmt(gross)} G</b>${state.debt?` · 미끼 외상 ${fmt(state.debt)} G`:''}<br>평판 <b>${Math.round(state.rep||0)}</b> · ${repLabel(state)} · 판매가 ${rf>=0?'+':''}${(rf*10).toFixed(1)}% · 장비·음식·미끼 ${rf>=0?'−':'+'}${Math.abs(rf*10).toFixed(1)}%<br>행운 <b>${luck(state)}</b> · 흥정 대성공 ${(hc.great*100).toFixed(1)}% · 성공 ${(hc.success*100).toFixed(1)}%</div>${state.bag.length?`<div class="row sel-tools"><button class="secondary" data-do="sel-all">전체 선택</button><button class="secondary" data-do="sel-cheap">싼 물고기 선택</button><button class="secondary" data-do="sel-none">선택 해제</button></div><p class="sel-summary" id="selSummary"></p><div class="row sale-actions"><button class="primary" data-do="sell-sel" data-id="normal">일반 판매<br><small>100%</small></button><button class="secondary" data-do="sell-sel" data-id="discount">평판 판매<br><small>80% · 평판 +0.5/마리</small></button><button class="secondary" data-do="haggle-confirm">흥정<br><small>×3 / ×2 / 실패 반값</small></button></div><div class="sale-list">${state.bag.map(x=>`<button class="list-item sale-item ${saleSel.has(x.uid)?'selected':''}" data-do="sel-toggle" data-id="${x.uid}">${sprite(x.id)}<div class="desc"><strong>${FISH[x.id].name}</strong><small>${['대형','중형','소형'][x.grade]} · ${x.size}cm · ${weightLabel(x)}</small></div><b class="sale-price">${fmt(x.value)} G</b><i class="sale-check" aria-hidden="true"></i></button>`).join('')}</div>`:'<p>아직 보관한 물고기가 없어요. 낚시터에서 한 마리 잡아볼까요?</p>'}<p class="muted">물고기를 골라서 원하는 방법으로 팔아요. 판매가 = 무게(kg) × kg 단가, 판매마다 유지비가 빠져요. 평판 판매로 평판을 쌓으면 모든 판매가가 오르고 장비·음식이 싸져요.</p>`,'market');updateSaleSummary();}
  else if(name==='collection')show('물고기 여행 도감',`<p><b>${Object.keys(state.collection).length} / ${FISH.length}종</b>을 만났어요. 물고기를 누르면 미끼와 시간대를 볼 수 있어요.</p><div class="fish-grid">${FISH.map(f=>`<button class="fish-card ${state.collection[f.id]?'':'unknown'}" data-do="fish-detail" data-id="${f.id}">${sprite(f.id)}<b>${f.name}</b><small>${state.collection[f.id]?`${state.collection[f.id]}마리 · ${state.records[f.id]}cm`:f.boss?'보스 어종':f.ornamental?'관상어':'아직 만나지 못함'}</small></button>`).join('')}</div>`,'collection');
- else if(name==='settings')show('게임 설정',`<div class="setting-row nickname-setting"><div><b>닉네임</b><span>${esc(state.nickname)}</span></div><button data-do="nickname-edit">수정</button></div><div class="setting-row"><b>효과음</b><button data-do="sound">${state.muted?'꺼짐':'켜짐'}</button></div><div class="setting-row"><b>진동</b><button data-do="haptics">${state.haptics?'켜짐':'꺼짐'}</button></div><p class="muted">진동은 지원하는 휴대폰에서만 작동해요.</p><button class="primary" data-do="update">최신 버전 업데이트</button><button class="secondary" data-do="help">게임 방법 · 홈 화면에 추가</button><div class="row"><button class="secondary" data-do="export">저장 내보내기</button><button class="secondary" data-do="import">저장 가져오기</button></div><p class="muted">자동 저장은 지금 사용하는 기기·브라우저에 저장돼요. 다른 휴대폰으로 옮길 때 저장 파일을 가져오세요. 앱을 닫으면 진행 중인 낚시는 끝나지만, 잡은 물고기와 금화는 유지됩니다.</p><button class="danger-button" data-do="reset-confirm">처음부터 다시 시작</button><p class="version">${TITLE} v${VERSION}<br>여행 시간 ${Math.floor(state.seconds/3600)}시간 ${Math.floor(state.seconds/60)%60}분 · ${state.caught}마리 포획<br>그림: 새로 제작한 AI 일러스트 · 폰트: LINE Seed KR<br><b>© 2026 체니. All rights reserved.</b><br>새 게임 코드·창작 콘텐츠 저작권자: 체니<br><a href="LICENSE.txt" target="_blank" rel="noopener">저작권 및 이용 안내</a></p>`,'settings');
+ else if(name==='boosts')openBoosts();
+ else if(name==='settings')show('게임 설정',`<div class="setting-row nickname-setting"><div><b>닉네임</b><span>${esc(state.nickname)}</span></div><button data-do="nickname-edit">수정</button></div><div class="setting-row"><b>효과음</b><button data-do="sound">${state.muted?'꺼짐':'켜짐'}</button></div><div class="setting-row"><b>진동</b><button data-do="haptics">${state.haptics?'켜짐':'꺼짐'}</button></div><p class="muted">진동은 지원하는 휴대폰에서만 작동해요.</p><button class="secondary" data-do="boosts">업데이트 보상</button><button class="primary" data-do="update">최신 버전 업데이트</button><button class="secondary" data-do="help">게임 방법 · 홈 화면에 추가</button><div class="row"><button class="secondary" data-do="export">저장 내보내기</button><button class="secondary" data-do="import">저장 가져오기</button></div><p class="muted">자동 저장은 지금 사용하는 기기·브라우저에 저장돼요. 다른 휴대폰으로 옮길 때 저장 파일을 가져오세요. 앱을 닫으면 진행 중인 낚시는 끝나지만, 잡은 물고기와 금화는 유지됩니다.</p><button class="danger-button" data-do="reset-confirm">처음부터 다시 시작</button><p class="version">${TITLE} v${VERSION}<br>여행 시간 ${Math.floor(state.seconds/3600)}시간 ${Math.floor(state.seconds/60)%60}분 · ${state.caught}마리 포획<br>그림: 새로 제작한 AI 일러스트 · 폰트: LINE Seed KR<br><b>© 2026 체니. All rights reserved.</b><br>새 게임 코드·창작 콘텐츠 저작권자: 체니<br><a href="LICENSE.txt" target="_blank" rel="noopener">저작권 및 이용 안내</a></p>`,'settings');
  render();
 }
 document.querySelectorAll('[data-panel]').forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));$('settingsBtn').onclick=()=>openPanel('settings');$('bagBtn').onclick=()=>openPanel('storage');$('baitBtn').onclick=()=>{if(phase==='idle')openPanel('bait');else toast('낚시를 마친 뒤 미끼를 바꿀 수 있어요.');};$('bossBtn').onclick=()=>openPanel('goals');$('mealBtn').onclick=()=>{if(phase==='fight'){toast('물고기와 싸우는 중에는 먹을 수 없어요.');return;}openPanel('food');};$('clockBtn').onclick=()=>{if(phase!=='idle'){toast('낚시를 마치고 집에서 쉬어 주세요.');return;}openPanel('time');};
@@ -262,16 +311,32 @@ body.addEventListener('click',async e=>{const b=e.target.closest('[data-do]');if
  if(cmd==='fish-detail'){const f=FISH[Number(id)];show(f.name,`<div class="catch-art">${sprite(f.id)}</div><p><b>낚시터</b> · ${f.regions.map(i=>REGIONS[i].display||REGIONS[i].name).join(', ')}</p><p><b>시간대</b> · ${scheduleLabel(f)}<br><small>${ecology(f).kind} · ${ecology(f).note}</small>${ecology(f).url?`<br><a href="${ecology(f).url}" target="_blank" rel="noopener">생태 자료 보기</a>`:''}</p><p><b>미끼</b> · ${f.boss?'지역 장비 +2와 포획 목표 달성 후 도전 · 천해룡은 최종 장비 +5와 모든 단서 필요':f.ornamental?'황금 등급 미끼':`${familyInfo(baitFamilyOf(f)).icon} ${familyInfo(baitFamilyOf(f)).name}`}</p><p>${esc(f.note.replace(/[^。.!]*[낮밤]에 출몰[^。.!]*[。.]?/g,''))}</p><p>중형 기준 예상 ${Math.ceil(fightPlan({...state,region:f.regions[0]},f).expected)}초 / 제한 ${fightPlan({...state,region:f.regions[0]},f).limit}초<br><small>반대 방향 조작과 줄 풀기 포함 추정 · 스킬 사용과 실제 조작에 따라 달라집니다.</small></p><div class="notice">${state.collection[f.id]?`포획 ${state.collection[f.id]}마리 · 최고 기록 ${state.records[f.id]}cm`:'아직 만나지 못한 물고기예요.'}</div><button class="secondary" data-do="collection">도감으로 돌아가기</button>`,'fish-detail');return;}
  if(cmd==='nickname-edit'){openNickname(true);return;}
  if(cmd==='import-cancel'){pendingImport=null;if(state.nickname)openPanel('settings');else openNickname();return;}
+ if(cmd==='v4-reset-confirm'){
+  state.resetNotice=false;
+  if(!save()){state.resetNotice=true;return;}
+  discardLegacySaves(localStorage);
+  if(state.nickname)close();else openNickname();
+  return;
+ }
+ if(cmd==='boosts'){openBoosts();return;}
+ if(cmd==='boost-use'){
+  const previous=state.rewardBoosts[id];
+  if(useRewardBoost(state,id)){
+   if(save()){openBoosts();toast('24시간 효과가 시작됐어요.');}
+   else state.rewardBoosts[id]=previous;
+  }
+  return;
+ }
  if(cmd==='sound'){state.muted=!state.muted;save();openPanel('settings');return;}
  if(cmd==='haptics'){state.haptics=!state.haptics;save();openPanel('settings');return;}
  if(cmd==='export'){save();const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${TITLE.replaceAll(' ','')}-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('저장 파일을 내보냈어요. 다른 기기에서 가져올 수 있어요.');return;}
  if(cmd==='import'){if(phase!=='idle'){toast('낚시를 마친 뒤 저장을 가져와 주세요.');return;}$('importFile').click();return;}
  if(cmd==='reset-confirm'){show('정말 처음부터 시작할까요?',`<p>이 브라우저에 저장된 금화, 장비, 도감과 여행 진행이 초기화됩니다. 보관할 기록이 있다면 설정에서 저장 파일을 먼저 내보내세요.</p><button class="danger-button" data-do="reset">모든 진행 초기화</button><button class="secondary" data-do="settings">취소하고 돌아가기</button>`,'reset');return;}
- if(cmd==='reset'){state=STARTER();save();view='town';close();resetIdle();openNickname();return;}
+ if(cmd==='reset'){state=keepRewardHistory(state,STARTER());save();view='town';close();resetIdle();openNickname();return;}
  if(cmd==='update'){b.disabled=true;b.textContent='최신 버전 확인 중…';try{await reg?.update();if(reg?.installing){b.textContent='새 게임 파일을 받는 중…';await new Promise((resolve,reject)=>{const worker=reg.installing;const timeout=setTimeout(()=>reject(Error('update timeout')),90000);const check=()=>{if(worker.state==='activated'){clearTimeout(timeout);resolve();}else if(worker.state==='redundant'){clearTimeout(timeout);reject(Error('update failed'));}};worker.addEventListener('statechange',check);check();});}const res=await fetch(`version.json?t=${Date.now()}`,{cache:'no-store'});if(!res.ok)throw Error();const v=await res.json();if(v.version===VERSION){toast(`최신 버전 ${VERSION}을 사용 중이에요.`);openPanel('settings');}else{save();reg?.waiting?.postMessage({type:'SKIP_WAITING'});show('업데이트가 준비됐어요',`<p>저장한 진행은 유지돼요. 다시 열면 최신 버전 ${esc(v.version)}이 적용됩니다.</p><button class="primary" data-do="reload">저장하고 새로 열기</button>`,'update');}}catch{toast('인터넷 연결을 확인하고 다시 시도해 주세요.');openPanel('settings');}return;}
  if(cmd==='reload'){save();location.reload();}
 });
-let pendingImport=null;$('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>5000000)throw Error('저장 파일이 너무 커요.');pendingImport=validateSave(JSON.parse(await file.text()));show('저장 파일을 가져올까요?',`<p>현재 진행을 파일 속 기록으로 바꿉니다.</p><div class="notice">${pendingImport.nickname?esc(pendingImport.nickname)+' · ':''}${REGIONS[pendingImport.region].name} · ${pendingImport.caught}마리 · ${fmt(pendingImport.coins)} G</div><button class="primary" id="confirmImport">이 기록으로 이어하기</button><button class="secondary" data-do="import-cancel">취소</button>`,'import');$('confirmImport').onclick=()=>{state=pendingImport;pendingImport=null;save();close();resetIdle('가져온 여행을 이어갈 준비가 됐어요.');toast('저장 파일을 가져왔어요.');if(!state.nickname)openNickname();};}catch(err){toast(err.message||'올바른 저장 파일이 아니에요.',4000);}e.target.value='';};
+let pendingImport=null;$('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>5000000)throw Error('저장 파일이 너무 커요.');pendingImport=validateSave(JSON.parse(await file.text()));show('저장 파일을 가져올까요?',`<p>현재 진행을 파일 속 기록으로 바꿉니다.</p><div class="notice">${pendingImport.nickname?esc(pendingImport.nickname)+' · ':''}${REGIONS[pendingImport.region].name} · ${pendingImport.caught}마리 · ${fmt(pendingImport.coins)} G</div><button class="primary" id="confirmImport">이 기록으로 이어하기</button><button class="secondary" data-do="import-cancel">취소</button>`,'import');$('confirmImport').onclick=()=>{state=keepRewardHistory(state,pendingImport);pendingImport=null;save();close();resetIdle('가져온 여행을 이어갈 준비가 됐어요.');toast('저장 파일을 가져왔어요.');if(!state.nickname)openNickname();};}catch(err){toast(err.message||'올바른 저장 파일이 아니에요.',4000);}e.target.value='';};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)save();try{releaseInput();}catch{}if(document.hidden)paused=true;render();});for(const ev of ['pagehide','freeze','beforeunload'])window.addEventListener(ev,()=>save());window.addEventListener('blur',()=>{releaseInput();if(phase!=='idle')paused=true;render();});$('pauseOverlay').onclick=()=>{paused=false;last=performance.now();render();};
 if('serviceWorker'in navigator&&!['localhost','127.0.0.1'].includes(location.hostname)){navigator.serviceWorker.register('./sw.js').then(r=>{reg=r;}).catch(()=>{});}
 function handleContest(cmd,id){
@@ -298,22 +363,22 @@ function goTown(){
  view='town';releaseInput();paused=false;close();render();
 }
 function renderActiveSkills(){
- [0,1,2].forEach(i=>{const id=state.equippedSkills[i],k=SKILLS.find(k=>k.id===id),n=state.skills[id]||0,b=$('active'+i),cool=fight?.cooldowns[id]||0,inFight=phase==='fight'&&fight&&!fight.done;
- if(b.dataset.skill!==id){b.dataset.skill=id;b.querySelector('.skill-icon')?.remove();b.insertAdjacentHTML('afterbegin',skillIcon(id));}b.classList.toggle('unlearned',!n);b.style.setProperty('--cool',k&&cool>0?Math.min(1,cool/(SKILL_COOLDOWN[id]||20)):0);b.setAttribute('aria-label',k.name);b.querySelector('b').textContent=k.name;
+ ACTIVE_SLOTS.forEach(i=>{const id=state.equippedSkills[i],k=SKILL_BY_ID[id],n=state.skills[id]||0,b=$('active'+i),cool=skillCooldown(fight,id),inFight=phase==='fight'&&fight&&!fight.done;
+ if(b.dataset.skill!==id){b.dataset.skill=id;b.querySelector('.skill-icon')?.remove();b.insertAdjacentHTML('afterbegin',skillIcon(id));}b.classList.toggle('unlearned',!n);b.style.setProperty('--cool',k&&cool>0?Math.min(1,cool/(SKILL_COOLDOWN[id]||20)):0);b.setAttribute('aria-label',`${i+1}번 ${k.name}`);b.setAttribute('aria-keyshortcuts',String(i+1));b.querySelector('b').textContent=k.name;
  b.querySelector('small').textContent=!n?'미습득':!inFight?(phase==='bite'||phase==='waiting'?'챔질 후 사용':`Lv.${n}`):cool>0?`${Math.ceil(cool)}초`:'사용 가능';
- b.disabled=!n||paused||!inFight||cool>0;b.classList.toggle('effect-on',Boolean(fight?.effects[id]>0));
+ b.disabled=!n||paused||!inFight||cool>0;b.classList.toggle('effect-on',Boolean(fight?.effects[k.effect||id]>0));
  });
 }
 function useActive(i){if(modal.open||paused)return;const id=state.equippedSkills[i];if(!state.skills[id]){toast('마을의 낚시 학교에서 먼저 배워 주세요.');return;}
  if(phase!=='fight'||!fight){toast(id==='strike'?'강타는 물고기를 건 뒤에 쓸 수 있어요.':'물고기를 건 뒤에 사용할 수 있어요.');return;}
- if(skill(fight,id)){const name=SKILLS.find(k=>k.id===id).name;fx.impact(id,name+'!',true);toast(`${name} 발동!`);sound(id==='shock'?'electric':'critical');buzz(25);renderActiveSkills();}
+ if(skill(fight,id)){const name=SKILLS.find(k=>k.id===id).name;fx.impact(activeSkillFamily(id),name+'!',true);toast(`${name} 발동!`);sound(activeSkillFamily(id)==='shock'?'electric':'critical');buzz(25);renderActiveSkills();}
 }
 function selectedFish(){return state.bag.filter(x=>saleSel.has(x.uid));}
 function updateSaleSummary(){const el=document.getElementById('selSummary');if(!el)return;const xs=selectedFish(),v=xs.reduce((a,f)=>a+f.value,0),fee=xs.filter(x=>!x.boss).reduce((a,f)=>a+REGIONS[f.region].expense_on_sale,0),rm=repSaleMult(state);
  el.innerHTML=xs.length?`선택 <b>${xs.length}마리</b> · 일반 ${fmt(Math.max(0,v*rm-fee))} G · 평판 ${fmt(Math.max(0,v*.8*rm-fee))} G`:'판매할 물고기를 눌러 선택하세요.';
  for(const b of body.querySelectorAll('[data-do="sell-sel"],[data-do="haggle-confirm"]'))b.disabled=!xs.length;}
 function openAuto(){const on=autoRunning(state),a=state.auto,bid=on?a.bait||autoBait(state):autoBait(state),bait=BAITS.find(x=>x.id===bid),left=state.baitStock[bid]||0,price=baitPrice(state,bid),pace=autoPace(state),why=canStartAuto(state);
- const ar=autoRates(state),pct=v=>(v*100).toFixed(v<.1?1:0)+'%';const rates=`<div class="notice">평판 <b>${Math.round(state.rep||0)}</b> → 판매 <b>${pct(ar.sale)}</b> · 경험치 <b>${pct(ar.xp)}</b><br>행운 <b>${ar.luck}</b> → 월척 확률 <b>${pct(ar.trophy)}</b></div>`;const rules=rates+`<ul class="checklist"><li>미끼는 이 낚시터의 <b>일반 미끼(${bait?.name||''})</b>를 써요. 가진 것을 먼저 쓰고, 떨어지면 금화로 1개씩 자동으로 사요.</li><li>시간 제한 없이 금화가 떨어지거나 직접 멈출 때까지 계속해요. 브라우저를 안 보거나 닫아도 진행되고, 다시 열면 정산돼요.</li><li>보통은 일반 물고기만 잡혀요. 행운이 높을수록 가끔 월척(대형)이 걸려요(행운 0에 1%, 최대 10%). 보스·관상어는 잡히지 않아요.</li><li>잡은 물고기는 바로 자동 판매돼요. 기본은 <b>물고기 값의 ${AUTO_SALE*100}%</b>, 경험치 ${AUTO_XP*100}%이고 평판이 높을수록 올라가요(평판 100에 40%).</li><li>자동 낚시 중에는 직접 낚시와 낚시터 이동을 할 수 없어요.</li></ul>`;
+ const ar=autoRates(state),pct=v=>(v*100).toFixed(v<.1?1:0)+'%';const rates=`<div class="notice">평판 <b>${Math.round(state.rep||0)}</b> → 판매 <b>${pct(ar.sale)}</b> · 경험치 <b>${pct(ar.xp)}</b><br>행운 <b>${ar.luck}</b> → 월척 확률 <b>${pct(ar.trophy)}</b></div>`;const rules=rates+`<ul class="checklist"><li>미끼는 이 낚시터의 <b>일반 미끼(${bait?.name||''})</b>를 써요. 가진 것을 먼저 쓰고, 떨어지면 금화로 1개씩 자동으로 사요.</li><li>시간 제한 없이 금화가 떨어지거나 직접 멈출 때까지 계속해요. 브라우저를 안 보거나 닫아도 진행되고, 다시 열면 정산돼요.</li><li>보통은 일반 물고기만 잡혀요. 행운이 높을수록 가끔 월척(대형)이 걸려요(행운 0에 1%, 최대 10%). 보스·관상어는 잡히지 않아요.</li><li>잡은 물고기는 바로 자동 판매돼요. 기본은 <b>물고기 값의 ${AUTO_SALE*100}%</b>, 경험치 ${AUTO_XP*100}%이고 평판이 높을수록 올라가요(평판 100에 40%).</li><li>장착한 공격 스킬의 단계에 따라 물고기와 싸우는 시간이 최대 8% 줄어요. 같은 계열은 높은 단계만 적용돼요.</li><li>자동 낚시 중에는 직접 낚시와 낚시터 이동을 할 수 없어요.</li></ul>`;
  if(on){const mins=Math.max(0,(Date.now()-a.since)/60000);show('자동 낚시',`<div class="notice"><b>🤖 ${REGIONS[a.region].display||REGIONS[a.region].name}에서 자동 낚시 중</b><br>${Math.floor(mins/60)}시간 ${Math.floor(mins%60)}분째 · 잡은 물고기 ${fmt(a.caught)}마리(월척 ${fmt(a.trophies||0)} · 놓침 ${fmt(a.missed)})<br>판매 수익 <b>${fmt(a.gold)} G</b> · 경험치 +${fmt(a.xp)}<br>미끼 ${bait?.name||''} ${fmt(left)}개 남음 · 자동 구매 ${fmt(a.bought||0)}개(−${fmt(a.spent||0)} G)</div>${rules}${view!=='fish'?'<button class="primary" data-do="auto-view">낚시터에서 보기</button>':''}<button class="danger-button" data-do="auto-stop">자동 낚시 멈추기</button>`,'auto');return;}
  show('자동 낚시',`<div class="notice"><b>${REGIONS[state.region].display||REGIONS[state.region].name}</b> · 일반 미끼 ${bait?.name||''} <b>${fmt(left)}개</b> 보유 · 개당 ${fmt(price)} G<br>한 마리에 약 ${Math.round(pace)}초 · 미끼가 떨어지면 금화로 자동 구매</div>${rules}${why?`<p class="muted">${why}</p>`:''}<button class="primary" data-do="auto-start" ${why||phase!=='idle'?'disabled':''}>자동 낚시 시작</button>${phase!=='idle'?'<p class="muted">진행 중인 낚시를 마친 뒤 시작할 수 있어요.</p>':''}`,'auto');}
 function autoSummary(title,d,extra=''){show(title,`<div class="haggle-result"><span class="haggle-badge success">🤖 ${fmt(d.caught)}마리</span><div class="haggle-rows"><span>잡은 물고기</span><b>${fmt(d.caught)}마리</b>${d.trophies?`<span>✨ 월척</span><b>${fmt(d.trophies)}마리</b>`:''}<span>놓친 물고기</span><b>${fmt(d.missed)}마리</b><span>쓴 미끼</span><b>${fmt(d.used)}개</b>${d.bought?`<span>자동 구매한 미끼</span><b>${fmt(d.bought)}개 · −${fmt(d.spent)} G</b>`:''}<span>경험치</span><b>+${fmt(d.xp)}</b><span>현재 레벨 · 체력</span><b>Lv.${playerLevel(state)} · ${Math.ceil(state.hp)}/${maxHP(state)}</b><span class="total">자동 판매 수익</span><b class="total">${fmt(d.gold)} G</b></div>${extra}</div><button class="primary" data-do="close">확인</button>`,'auto-summary');}
@@ -370,15 +435,13 @@ async function handleV2(cmd,id,b){
  if(['boats','boats-all','home','storage','skills','equipment','equipment-all'].includes(cmd)){openPanel(cmd);return true;}
  if(cmd==='town-confirm'){if(fight)state.hp=Math.max(0,fight.hero);if(completeContestCast())return true;save();view='town';resetIdle();close();return true;}
  if(cmd==='resume-fishing'){close();return true;}
- if(cmd.startsWith('equipment-')){if(phase!=='idle'){toast('낚시를 마치고 장비를 바꿔 주세요.');return true;}const [slot,tier]=id.split(':');const act=cmd.slice(10),ok=changeEquipment(state,act,slot,Number(tier));if(!ok)toast('금화·레벨·보유 장비와 외상을 확인해 주세요.');else if(act!=='enhance'&&act!=='buy')toast('장비 변경을 완료했어요.');if(ok){sound(act==='enhance'?'hit':'catch');save();}openPanel(panel==='shop'||panel==='equipment-all'?panel:'equipment');const section=body.querySelector('[data-equipment-slot="'+slot+'"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}if(ok&&(act==='enhance'||act==='buy')){const ic={rod:'🎣',reel:'⚙️',float:'🔴',line:'🧵',hook:'🪝'}[slot]||'✨',nm=equipmentName(slot,Number(tier));if(act==='enhance'){const rk=ensureEquipment(state)[slot].owned[Number(tier)];celebrate('forge',{icon:ic,title:`강화 성공! +${rk}`,sub:nm});setTimeout(()=>sound('critical'),180);buzz([20,30,40]);}else{celebrate('newgear',{icon:ic,title:'새 장비!',sub:nm});buzz([20,40,20]);}}return true;}
- const ops=['v2-upgrade','tackle-buy','boat-buy','boat-select','boat-sell-confirm','boat-sell','home-upgrade','sleep','store-fish','withdraw-fish','store-all','withdraw-all','skill-learn','skill-equip','v2-travel','v2-boss','bait-buy','bait-buy50','bait-emergency','skill-reset-confirm','skill-reset'];
+ if(cmd.startsWith('equipment-')){if(phase!=='idle'){toast('낚시를 마치고 장비를 바꿔 주세요.');return true;}const [slot,tier]=id.split(':');const act=cmd.slice(10),ok=changeEquipment(state,act,slot,Number(tier));if(!ok)toast('금화·레벨·보유 장비와 외상을 확인해 주세요.');else if(ok==='failed')toast('강화 실패 · 금화는 차감되고 강화 단계는 유지됐어요.');else if(act!=='enhance'&&act!=='buy')toast('장비 변경을 완료했어요.');if(ok){sound(ok==='failed'?'fail':act==='enhance'?'hit':'catch');save();}openPanel(panel==='shop'||panel==='equipment-all'?panel:'equipment');const section=body.querySelector('[data-equipment-slot="'+slot+'"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}if(ok===true&&(act==='enhance'||act==='buy')){const ic={rod:'🎣',reel:'⚙️',float:'🔴',line:'🧵',hook:'🪝'}[slot]||'✨',nm=equipmentName(slot,Number(tier));if(act==='enhance'){const rk=ensureEquipment(state)[slot].owned[Number(tier)];celebrate('forge',{icon:ic,title:`강화 성공! +${rk}`,sub:nm});setTimeout(()=>sound('critical'),180);buzz([20,30,40]);}else{celebrate('newgear',{icon:ic,title:'새 장비!',sub:nm});buzz([20,40,20]);}}return true;}
+ const ops=['boat-buy','boat-select','boat-sell-confirm','boat-sell','home-upgrade','sleep','store-fish','withdraw-fish','store-all','withdraw-all','skill-learn','skill-equip','v2-travel','v2-boss','bait-buy','bait-buy50','bait-emergency','skill-reset-confirm','skill-reset'];
  if(!ops.includes(cmd))return false;
  if(phase!=='idle'){toast('진행 중인 낚시를 마치거나 마을로 귀항한 뒤 이용해 주세요.');return true;}
  const failMsg='금화·레벨·미끼 외상과 필요한 조건을 확인해 주세요.';
  if(cmd==='skill-reset-confirm'){show('스킬을 다시 배분할까요?',`<p>사용한 스킬 포인트를 모두 돌려받아요. 배운 스킬은 초기화되며 금화는 들지 않아요.</p><button class="primary" data-do="skill-reset">포인트 돌려받기</button><button class="secondary" data-do="skills">취소</button>`,'skills');}
  if(cmd==='skill-reset'){resetSkills(state);save();openPanel('skills');}
- if(cmd==='v2-upgrade'){if(upgradeGear(state)){save();openPanel('shop');celebrate('forge',{icon:'🔨',title:`강화 성공! +${state.tackleUpgrade}`,sub:TACKLE[state.tackle].name});sound('hit');setTimeout(()=>sound('critical'),180);buzz([20,30,40]);}else{toast(failMsg);save();openPanel('shop');}}
- if(cmd==='tackle-buy'){if(buyTackle(state)){save();openPanel('shop');celebrate('newgear',{icon:'🎣',title:'새 장비 세트!',sub:`${TACKLE[state.tackle].name} 장착 · 이전 장비는 정산했어요`});sound('catch');buzz([20,40,20]);}else{toast(failMsg);save();openPanel('shop');}}
  const boatPanel=panel==='boats-all'?'boats-all':'boats';
  if(cmd==='boat-buy'){if(buyBoat(state,Number(id))){selectBoat(state,Number(id));save();openPanel(boatPanel);celebrate('boat',{icon:'⛵',title:'새 배 출항!',sub:`${BOATS[Number(id)].name} 구매 · 탑승 완료`});sound('catch');buzz([20,40,20]);}else{toast(failMsg);save();openPanel(boatPanel);}}
  if(cmd==='boat-select'){if(selectBoat(state,Number(id)))toast(`${BOATS[Number(id)].name}에 탑승했어요.`);else toast('물고기가 배의 수족관 용량보다 많아요. 집에 보관하거나 판매해 주세요.');save();openPanel(boatPanel);}
@@ -400,7 +463,8 @@ async function handleV2(cmd,id,b){
 }
 if(state.tournament)view='fish';
 resetIdle();
-if(!state.nickname)openNickname();
+if(state.resetNotice)openResetNotice();
+else if(!state.nickname)openNickname();
 else if(!(state.tournament&&restoreContestCast())&&state.tutorial)openPanel('help');
 requestAnimationFrame(tick);
 {let exitArmed=0;const guard=()=>{try{history.pushState({jo:1},'');}catch{}};guard();
@@ -411,5 +475,4 @@ requestAnimationFrame(tick);
   exitArmed=Date.now();toast('저장했어요. 뒤로가기를 한 번 더 누르면 게임을 나가요.',2500);guard();});}
 // Auto fishing keeps settling on the wall clock (timers keep running at a slower pace in hidden tabs).
 $('autoBtn').onclick=e=>{e.stopPropagation();openAuto();};$('autoOverlay').addEventListener('click',e=>{e.stopPropagation();if(e.target.closest('[data-do="auto-stop"]'))handleV3('auto-stop');else openAuto();});$('autoOverlay').addEventListener('pointerdown',e=>e.stopPropagation());setInterval(()=>runAuto(false),1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)runAuto(true);});$('autoPill').onclick=e=>{e.stopPropagation();openAuto();};if(autoRunning(state)){state.region=state.auto.region;view='fish';}runAuto(true);render();
-if(state.migrated){delete state.migrated;save();toast('기존 기록을 새 배·장비 체계로 옮겼어요. 보관함 강화 비용은 돌려드렸어요.',6000);}
 if(loadError)toast('저장 기록을 읽지 못했어요. 백업 파일이 있다면 가져와 주세요.',6000);

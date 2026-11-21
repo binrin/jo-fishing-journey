@@ -56,7 +56,26 @@ export const REP_MIN=-100,REP_MAX=100;
 export const repFactor=s=>clamp((s.rep||0)/100,-1,1);
 export const repSaleMult=s=>1+.1*repFactor(s);
 export const repPrice=(s,n)=>Math.max(0,Math.round(n*(1-.1*repFactor(s))));
-export function addRep(s,n){s.rep=clamp((s.rep||0)+n,REP_MIN,REP_MAX);return s.rep;}
+export const REWARD_BOOSTS=[{id:'xp',name:'경험치 2배권'},{id:'rep',name:'평판 2배권'}];
+export const BOOST_DURATION=24*60*60*1000;
+export function rewardBoosts(raw){
+ return Object.fromEntries(REWARD_BOOSTS.map(({id})=>{
+  const item=raw?.[id];
+  const count=Number.isSafeInteger(item?.count)&&item.count===1?1:0;
+  const from=Number.isSafeInteger(item?.from)&&item.from>0?item.from:0;
+  return [id,{count:from?0:count,from}];
+ }));
+}
+export function useRewardBoost(s,id,now=Date.now()){
+ if(!REWARD_BOOSTS.some(x=>x.id===id)||s.rewardBoosts?.[id]?.count!==1)return false;
+ s.rewardBoosts[id]={count:0,from:now};
+ return true;
+}
+export function boostMultiplier(s,id,now=Date.now()){
+ const from=s.rewardBoosts?.[id]?.from;
+ return from>0&&now>=from&&now<from+BOOST_DURATION?2:1;
+}
+export function addRep(s,n,now=Date.now()){s.rep=clamp((s.rep||0)+(n>0?n*boostMultiplier(s,'rep',now):n),REP_MIN,REP_MAX);return s.rep;}
 export function repLabel(s){const r=Math.round(s.rep||0);return r>=60?'존경받는 낚시꾼':r>=25?'믿을 만한 단골':r>-25?'평범한 손님':r>-60?'깐깐한 흥정꾼':'소문난 진상';}
 
 // ---------- luck ----------

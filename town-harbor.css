@@ -1,7 +1,7 @@
 /* The chart and its touch areas share the artwork's full bounds. */
 #game.town-view {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: 54px 37px minmax(0, 1fr) 58px !important;
+  grid-template-rows: 54px 37px minmax(0, 1fr) !important;
   padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
   background: #f7f3e8;
 }
@@ -32,10 +32,8 @@
 
 #game.town-view > .town-map {
   display: grid;
-  grid-template: auto minmax(0, 1fr) auto auto / minmax(0, 1fr);
-  gap: 7px;
+  grid-template: auto minmax(0, 1fr) / minmax(0, 1fr);
   min-height: 0;
-  padding: 10px 10px 8px;
   background: #eaf0e3;
   color: #173d3a;
 }
@@ -46,7 +44,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 0 2px;
+  padding: 5px 10px;
 }
 
 .harbor-title {
@@ -69,9 +67,29 @@
   line-height: 1.15;
 }
 
-.harbor-health {
-  text-align: right;
+.harbor-heading-tools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   white-space: nowrap;
+}
+
+.harbor-collection {
+  min-height: 30px;
+  padding: 4px 7px;
+  border: 1px solid #b4cbb3;
+  border-radius: 7px;
+  background: #fffdf4;
+  color: #173d3a;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.harbor-collection:focus-visible,
+.harbor-actions button:focus-visible {
+  outline: 2px solid #177474;
+  outline-offset: 2px;
 }
 
 .harbor-xp { display: none; }
@@ -91,36 +109,15 @@
   isolation: isolate;
   min-height: 0;
   min-width: 0;
-  display: grid;
-  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
-  place-items: center;
-  border-radius: 16px;
   background: #214f50;
   overflow: hidden;
 }
 
-.harbor-chart::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: calc(100cqw + 64px);
-  height: calc(100cqh + 64px);
-  transform: translate(-50%, -50%);
-  z-index: -1;
-  background: center / cover var(--chart-image);
-  filter: blur(32px) brightness(.72);
-  opacity: .64;
-}
-
+/* Using the same rectangle for the artwork and hotspots keeps every target aligned. */
 .harbor-chart {
-  --chart-ratio: 1.5;
-  --chart-image: url("assets/town-harbor.webp");
-  width: min(100%, 54vh);
-  width: min(100cqw, calc(100cqh * var(--chart-ratio)));
-  aspect-ratio: var(--chart-ratio);
-  position: relative;
-  background: center / contain no-repeat var(--chart-image);
+  position: absolute;
+  inset: 0;
+  background: url("assets/town-harbor.webp") center / 100% 100% no-repeat;
 }
 
 .harbor-hotspot {
@@ -142,19 +139,33 @@
   box-shadow: inset 0 0 0 5px #173d3a;
 }
 
-.harbor-hotspot:focus-visible::after {
-  content: attr(aria-label);
+.harbor-label {
   position: absolute;
-  top: 3px;
+  top: 2px;
   left: 50%;
   transform: translateX(-50%);
   padding: 3px 6px;
+  border: 1px solid #d1bf8d;
   border-radius: 6px;
   background: #173d3a;
   color: #fff5d4;
-  font-size: 11px;
+  font-size: clamp(11px, 3.1vw, 15px);
+  font-weight: 700;
+  line-height: 1.15;
   white-space: nowrap;
   pointer-events: none;
+}
+
+.harbor-hotspot[data-town="map"] .harbor-label {
+  top: 35%;
+  background: #ffdf91;
+  color: #33330f;
+}
+
+.harbor-hotspot:hover .harbor-label,
+.harbor-hotspot:focus-visible .harbor-label {
+  background: #fff5d4;
+  color: #173d3a;
 }
 
 .harbor-hotspot[data-town="shop"] { --hotspot-x: 17%; --hotspot-y: 19%; }
@@ -167,55 +178,22 @@
 .harbor-hotspot[data-town="race"] { --hotspot-x: 39%; --hotspot-y: 60%; }
 .harbor-hotspot[data-town="map"] { --hotspot-x: 54%; --hotspot-y: 85%; --hotspot-width: 18%; --hotspot-height: 24%; }
 
-.harbor-facilities {
+.harbor-actions {
+  position: absolute;
+  z-index: 1;
+  inset-inline: 10px;
+  bottom: 8px;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 5px;
+  justify-items: end;
+  pointer-events: none;
 }
-
-.harbor-facility {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  min-height: 62px;
-  padding: 5px 3px;
-  border: 1px solid #cbd8c8;
-  border-radius: 10px;
-  background: #fffdf4;
-  line-height: 1.12;
-  word-break: keep-all;
-}
-
-.harbor-facility:hover { background: #f5f8e8; }
-.harbor-facility-icon { display: flex; }
-.harbor-facility-text { display: grid; gap: 2px; min-width: 0; max-width: 100%; }
-.harbor-facility b { font-size: clamp(10px, 2.9vw, 13px); }
-.harbor-facility-icon svg { width: 18px; height: 18px; }
-.harbor-facility small {
-  display: none;
-  color: #486353;
-  font-size: 10px;
-}
-
-@media (min-width: 450px) {
-  .harbor-facility small { display: block; }
-}
-
-@media (max-width: 449px) {
-  .harbor-facility { justify-content: flex-start; padding-top: 6px; }
-  .harbor-facility-text { flex: 1; place-items: center; }
-}
-
-.harbor-actions { display: grid; gap: 4px; min-width: 0; }
 
 .harbor-actions .auto-pill {
   position: static;
   transform: none;
-  max-width: none;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  pointer-events: auto;
   flex-direction: row;
   justify-content: center;
   gap: 6px;
@@ -228,155 +206,84 @@
 .harbor-actions .auto-pill b { font-size: 11px; padding: 0; }
 .harbor-actions .auto-pill span { font-size: 10px; }
 
-.harbor-departure {
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  min-height: 53px;
-  padding: 5px 12px;
-  border: 1px solid #165856;
-  border-radius: 13px;
-  background: linear-gradient(176deg, #177e76, #105957);
-  color: #fff9dd;
-  text-align: left;
-  box-shadow: inset 0 1px #ffffff40, 0 2px #14444240;
-}
+#game.town-view > .bottom-nav { display: none; }
 
-.harbor-departure-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: #dfe95e24;
-  color: #ffe3a2;
-  font-size: 22px;
-  line-height: 1;
-}
-.harbor-departure b, .harbor-departure small { display: block; }
-.harbor-departure b { font-size: 16px; line-height: 1.15; }
-.harbor-departure small { color: #e0f0dc; font-size: 11px; margin-top: 2px; line-height: 1.1; }
-.harbor-chevron { font-size: 29px; line-height: 1; }
-
-#game.town-view > .bottom-nav {
-  grid-area: 4 / 1;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: 4px 7px;
-  gap: 4px;
-  background: #fffdf4;
-  border-color: #d9decb;
-}
-
-#game.town-view > .bottom-nav button {
-  min-width: 0;
-  min-height: 0;
-  padding: 2px 1px;
-  gap: 1px;
-  border-color: #e2e3d3;
-  white-space: nowrap;
-}
-
-#game.town-view > .bottom-nav button[data-panel="town"] {
-  background: #e3efe1;
-  border-color: #b4cbb3;
-}
-
-#game.town-view > .bottom-nav button b { font-size: clamp(9px, 2.6vw, 12px); }
 .harbor-nav-icon { display: none; }
+#game.town-view .wallet .harbor-nav-icon { display: block; }
 
-#game.town-view .harbor-nav-icon { display: block; }
-
-#game.town-view > .wallet .mini-icon,
-#game.town-view > .bottom-nav .nav-icon {
-  background: none;
+#game.town-view > .wallet .mini-icon {
   display: grid;
   place-items: center;
+  width: 17px;
+  height: 17px;
+  background: none;
 }
-
-#game.town-view > .wallet .mini-icon { width: 17px; height: 17px; }
-#game.town-view > .bottom-nav .nav-icon { width: 25px; height: 25px; }
 
 @media (max-width: 350px) {
   #game.town-view > .wallet, #game.town-view > .top { padding-inline: 8px; }
   #game.town-view > .wallet button > span:last-child { font-size: 9px; }
-  #game.town-view > .town-map { padding-inline: 6px; gap: 5px; }
-  .harbor-facilities { gap: 3px; }
+  .harbor-heading { padding-inline: 6px; }
+  .harbor-heading-tools { gap: 5px; }
 }
 
 @media (max-height: 690px) {
-  #game.town-view { grid-template-rows: 45px 33px minmax(0, 1fr) 49px !important; }
-  #game.town-view > .town-map { padding-block: 6px; }
-  .harbor-facility { min-height: 48px; padding-block: 3px; }
-  .harbor-facility-icon svg { width: 15px; height: 15px; }
-  .harbor-departure { min-height: 45px; }
+  #game.town-view { grid-template-rows: 45px 33px minmax(0, 1fr) !important; }
 }
 
-@media (min-width: 900px), (orientation: landscape) and (min-width: 520px) {
-  #game.town-view { max-width: 980px; }
-  #game.town-view > .town-map {
-    grid-template: auto minmax(0, 1fr) auto / minmax(0, 1fr) minmax(220px, 30%);
-    column-gap: 10px;
+@media (min-width: 700px) {
+  body:has(> #game.town-view) { padding: 0; }
+  #game.town-view {
+    max-width: none;
+    max-height: none;
+    height: var(--app-h, 100vh);
+    height: var(--app-h, 100dvh);
+    border: 0;
+    border-radius: 0;
   }
-  .harbor-heading { grid-area: 1 / 1 / 2 / -1; }
-  .harbor-board { grid-area: 2 / 1 / 4 / 2; }
-  .harbor-facilities {
-    grid-area: 2 / 2 / 3 / 3;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(44px, 1fr));
-  }
-  .harbor-actions { grid-area: 3 / 2 / 4 / 3; }
-  .harbor-facility { min-height: 0; }
-  .harbor-facility:last-child { grid-column: 1 / -1; }
 }
 
-@media (orientation: landscape) and (max-height: 520px) and (min-width: 520px) {
-  #game.town-view { grid-template-rows: 39px 30px minmax(0, 1fr) 44px !important; }
-  #game.town-view > .town-map {
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 50%);
-    gap: 5px;
-  }
+@media (orientation: landscape) and (max-height: 520px) {
+  #game.town-view { grid-template-rows: 39px 30px minmax(0, 1fr) !important; }
+  .harbor-heading { padding-block: 2px; }
   .harbor-title h2 { font-size: 22px; }
-  .harbor-facilities {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(44px, 1fr));
-  }
-  .harbor-facility { grid-column: span 2; }
-  .harbor-facility:nth-last-child(-n + 2) { grid-column: span 3; }
-  .harbor-facility b { font-size: 11px; }
-  .harbor-facility small { display: none; }
-  #game.town-view > .bottom-nav button { flex-direction: row; gap: 4px; }
-  #game.town-view > .bottom-nav .nav-icon { width: 20px; height: 20px; }
+  .harbor-label { font-size: 12px; }
 }
 
-@media (orientation: landscape) and (max-height: 365px) and (min-width: 520px) {
-  .harbor-actions .auto-pill { padding: 3px; }
+@container harbor-board (max-aspect-ratio: 11 / 10) {
+  .harbor-chart { background-image: url("assets/town-harbor-portrait.webp"); }
+  .harbor-hotspot[data-town="shop"] { --hotspot-x: 16%; --hotspot-y: 16%; --hotspot-height: 14%; }
+  .harbor-hotspot[data-town="market"] { --hotspot-x: 85%; --hotspot-y: 16%; --hotspot-width: 28%; --hotspot-height: 15%; }
+  .harbor-hotspot[data-town="skills"] { --hotspot-x: 51%; --hotspot-y: 15%; --hotspot-height: 18%; }
+  .harbor-hotspot[data-town="tank"] { --hotspot-x: 24%; --hotspot-y: 33%; --hotspot-width: 29%; --hotspot-height: 17%; }
+  .harbor-hotspot[data-town="restaurant"] { --hotspot-x: 77%; --hotspot-y: 34%; --hotspot-width: 29%; }
+  .harbor-hotspot[data-town="home"] { --hotspot-x: 13%; --hotspot-y: 50%; --hotspot-height: 16%; }
+  .harbor-hotspot[data-town="boats"] { --hotspot-x: 81%; --hotspot-y: 52%; }
+  .harbor-hotspot[data-town="race"] { --hotspot-x: 38%; --hotspot-y: 53%; --hotspot-height: 15%; }
+  .harbor-hotspot[data-town="map"] { --hotspot-x: 51%; --hotspot-y: 77%; --hotspot-height: 30%; }
 }
 
-@media (orientation: landscape) and (max-height: 300px) and (min-width: 520px) {
-  .harbor-facilities {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: minmax(44px, 1fr);
-  }
-  .harbor-facility:nth-child(n) { grid-column: auto; }
+@container harbor-board (max-aspect-ratio: 17 / 25) {
+  .harbor-chart { background-image: url("assets/town-harbor-tall.webp"); }
+  .harbor-hotspot[data-town="shop"] { --hotspot-x: 15%; --hotspot-y: 20%; }
+  .harbor-hotspot[data-town="market"] { --hotspot-x: 85%; --hotspot-y: 20%; }
+  .harbor-hotspot[data-town="skills"] { --hotspot-x: 50%; --hotspot-y: 16%; }
+  .harbor-hotspot[data-town="tank"] { --hotspot-x: 25%; --hotspot-y: 36%; }
+  .harbor-hotspot[data-town="restaurant"] { --hotspot-x: 75%; --hotspot-y: 35%; }
+  .harbor-hotspot[data-town="home"] { --hotspot-x: 14%; --hotspot-y: 49%; }
+  .harbor-hotspot[data-town="boats"] { --hotspot-x: 79%; --hotspot-y: 53%; }
+  .harbor-hotspot[data-town="race"] { --hotspot-x: 37%; --hotspot-y: 54%; }
+  .harbor-hotspot[data-town="map"] { --hotspot-x: 49%; --hotspot-y: 78%; }
 }
 
-/* Around 1.1:1, the portrait chart fills as much of the board as the landscape chart. */
-@media (orientation: portrait) and (max-width: 899px) {
-  @container harbor-board (max-aspect-ratio: 11 / 10) {
-    .harbor-chart {
-      --chart-ratio: calc(1122 / 1402);
-      --chart-image: url("assets/town-harbor-portrait.webp");
-      width: min(112cqw, calc(100cqh * var(--chart-ratio)));
-    }
-    .harbor-hotspot[data-town="shop"] { --hotspot-x: 16%; --hotspot-y: 18%; --hotspot-height: 12%; }
-    .harbor-hotspot[data-town="market"] { --hotspot-x: 86%; --hotspot-y: 18%; --hotspot-height: 12%; }
-    .harbor-hotspot[data-town="skills"] { --hotspot-x: 52%; --hotspot-y: 15%; }
-    .harbor-hotspot[data-town="tank"] { --hotspot-x: 24%; --hotspot-y: 32%; --hotspot-height: 15%; }
-    .harbor-hotspot[data-town="restaurant"] { --hotspot-x: 77%; --hotspot-y: 33%; }
-    .harbor-hotspot[data-town="home"] { --hotspot-x: 13%; --hotspot-y: 50%; }
-    .harbor-hotspot[data-town="boats"] { --hotspot-x: 81%; --hotspot-y: 52%; }
-    .harbor-hotspot[data-town="race"] { --hotspot-x: 38%; --hotspot-y: 55%; }
-    .harbor-hotspot[data-town="map"] { --hotspot-x: 51%; --hotspot-y: 83%; --hotspot-height: 28%; }
-  }
+@container harbor-board (min-aspect-ratio: 21 / 10) {
+  .harbor-chart { background-image: url("assets/town-harbor-wide.webp"); }
+  .harbor-hotspot[data-town="shop"] { --hotspot-x: 17%; --hotspot-y: 19%; }
+  .harbor-hotspot[data-town="market"] { --hotspot-x: 83%; --hotspot-y: 22%; }
+  .harbor-hotspot[data-town="skills"] { --hotspot-x: 50%; --hotspot-y: 16%; }
+  .harbor-hotspot[data-town="tank"] { --hotspot-x: 28%; --hotspot-y: 42%; }
+  .harbor-hotspot[data-town="restaurant"] { --hotspot-x: 72%; --hotspot-y: 41%; }
+  .harbor-hotspot[data-town="home"] { --hotspot-x: 10%; --hotspot-y: 54%; --hotspot-width: 19%; }
+  .harbor-hotspot[data-town="race"] { --hotspot-x: 36%; --hotspot-y: 58%; }
+  .harbor-hotspot[data-town="boats"] { --hotspot-x: 86%; --hotspot-y: 58%; }
+  .harbor-hotspot[data-town="map"] { --hotspot-x: 51%; --hotspot-y: 82%; }
 }

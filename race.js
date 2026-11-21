@@ -24,7 +24,7 @@ export const MAKERS=[
 ];
 
 const GRADES=LEAGUES.length;
-export const SUCCESS=[100,96,91,85,78,70,62,54,46,37];
+export const SUCCESS=[98,96,91,85,78,70,62,54,46,37];
 const makeRaceState=()=>({wins:Array(GRADES).fill(0),best:Array(GRADES).fill(null),attempts:0,
  materials:LEAGUES.map(()=>Object.fromEntries(PARTS.map(({id})=>[id,0]))),
  parts:Object.fromEntries(PARTS.map(({id})=>[id,{active:null,owned:{}}]))});

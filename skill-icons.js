@@ -1,6 +1,7 @@
 // Painted-style skill badges matching the game's sprites: thick brown outline,
 // jewel gradient, cream highlight. Active skills are round, passives are tiles.
 const O='#4a2e1a';
+import {SKILL_BY_ID} from './progression.js';
 const G={
  // passive
  strength:['#f08a4b','<path d="M24 58h52M30 44v28M70 44v28" stroke-width="13"/><path d="M24 58h52" stroke="#fff3d6" stroke-width="5"/><rect x="18" y="40" width="14" height="36" rx="5" fill="#ffd36e"/><rect x="68" y="40" width="14" height="36" rx="5" fill="#ffd36e"/>'],
@@ -26,10 +27,14 @@ const G={
  execute:['#c99418','<path d="M22 70l-4-38 18 14 14-24 14 24 18-14-4 38z" fill="#ffd36e"/><path d="M22 70h56v10H22z" fill="#f5b83d"/><circle cx="50" cy="56" r="7" fill="#e8384f"/><circle cx="18" cy="32" r="4" fill="#fff3d6"/><circle cx="82" cy="32" r="4" fill="#fff3d6"/><circle cx="50" cy="22" r="4" fill="#fff3d6"/>']
 };
 const dark=(h,f=.62)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.slice(i,i+2),16)*f).toString(16).padStart(2,'0')).join('');
-const PASSIVE=new Set(['strength','vitality','knot','focus','economy','lore','lure','recovery','reserve']);
+const variants={
+ powerStrike:['#c53e32','strike'],springline:['#247b91','elastic'],thunder:['#7853ba','shock'],
+ deepFreeze:['#3b7ebf','slow'],guardian:['#5166ad','grit'],
+ currentRead:['#316bb9','surge'],breath:['#308d91','renewal'],followThrough:['#aa5d38','reserve'],champion:['#a57a32','execute']
+};
 let seq=0;
 export function skillIcon(id,cls=''){
- const [c,glyph]=G[id]||['#9a8a70','<circle cx="50" cy="50" r="12" fill="#fff3d6"/>'],g='sk-'+id+'-'+(++seq);
- const shape=PASSIVE.has(id)?`<rect x="5" y="5" width="90" height="90" rx="24" fill="url(#${g})" stroke="${O}" stroke-width="6"/><rect x="13" y="13" width="74" height="74" rx="18" fill="none" stroke="#fff6dd" stroke-opacity=".55" stroke-width="3"/>`:`<circle cx="50" cy="50" r="45" fill="url(#${g})" stroke="${O}" stroke-width="6"/><circle cx="50" cy="50" r="37" fill="none" stroke="#fff6dd" stroke-opacity=".55" stroke-width="3"/>`;
+ const [c,glyph]=G[id]||(variants[id]?[variants[id][0],G[variants[id][1]][1]]:['#9a8a70','<circle cx="50" cy="50" r="12" fill="#fff3d6"/>']),g='sk-'+id+'-'+(++seq);
+ const shape=SKILL_BY_ID[id]?.type==='passive'?`<rect x="5" y="5" width="90" height="90" rx="24" fill="url(#${g})" stroke="${O}" stroke-width="6"/><rect x="13" y="13" width="74" height="74" rx="18" fill="none" stroke="#fff6dd" stroke-opacity=".55" stroke-width="3"/>`:`<circle cx="50" cy="50" r="45" fill="url(#${g})" stroke="${O}" stroke-width="6"/><circle cx="50" cy="50" r="37" fill="none" stroke="#fff6dd" stroke-opacity=".55" stroke-width="3"/>`;
  return `<svg class="skill-icon ${cls}" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="${g}" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="#fff6dd"/><stop offset=".28" stop-color="${c}"/><stop offset="1" stop-color="${dark(c)}"/></radialGradient></defs>${shape}<g stroke="${O}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">${glyph}</g><ellipse cx="34" cy="22" rx="14" ry="6" fill="#fff" opacity=".45" transform="rotate(-25 34 22)"/></svg>`;
 }

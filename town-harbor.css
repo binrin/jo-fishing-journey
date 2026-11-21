@@ -204,6 +204,11 @@
   .harbor-facility small { display: block; }
 }
 
+@media (max-width: 449px) {
+  .harbor-facility { justify-content: flex-start; padding-top: 6px; }
+  .harbor-facility-text { flex: 1; place-items: center; }
+}
+
 .harbor-actions { display: grid; gap: 4px; min-width: 0; }
 
 .harbor-actions .auto-pill {
@@ -319,7 +324,6 @@
     grid-area: 2 / 2 / 3 / 3;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(3, minmax(44px, 1fr));
-    align-self: end;
   }
   .harbor-actions { grid-area: 3 / 2 / 4 / 3; }
   .harbor-facility { min-height: 0; }
@@ -334,10 +338,11 @@
   }
   .harbor-title h2 { font-size: 22px; }
   .harbor-facilities {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: minmax(48px, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(44px, 1fr));
   }
-  .harbor-facility:last-child { grid-column: auto; }
+  .harbor-facility { grid-column: span 2; }
+  .harbor-facility:nth-last-child(-n + 2) { grid-column: span 3; }
   .harbor-facility b { font-size: 11px; }
   .harbor-facility small { display: none; }
   #game.town-view > .bottom-nav button { flex-direction: row; gap: 4px; }
@@ -348,6 +353,13 @@
   .harbor-actions .auto-pill { padding: 3px; }
 }
 
+@media (orientation: landscape) and (max-height: 300px) and (min-width: 520px) {
+  .harbor-facilities {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: minmax(44px, 1fr);
+  }
+  .harbor-facility:nth-child(n) { grid-column: auto; }
+}
 
 /* Around 1.1:1, the portrait chart fills as much of the board as the landscape chart. */
 @media (orientation: portrait) and (max-width: 899px) {

@@ -264,7 +264,7 @@ body.addEventListener('click',async e=>{const b=e.target.closest('[data-do]');if
  if(cmd==='import-cancel'){pendingImport=null;if(state.nickname)openPanel('settings');else openNickname();return;}
  if(cmd==='sound'){state.muted=!state.muted;save();openPanel('settings');return;}
  if(cmd==='haptics'){state.haptics=!state.haptics;save();openPanel('settings');return;}
- if(cmd==='export'){save();const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`조선생의낚시여행-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('저장 파일을 내보냈어요. 다른 기기에서 가져올 수 있어요.');return;}
+ if(cmd==='export'){save();const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${TITLE.replaceAll(' ','')}-${new Date().toISOString().slice(0,10)}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('저장 파일을 내보냈어요. 다른 기기에서 가져올 수 있어요.');return;}
  if(cmd==='import'){if(phase!=='idle'){toast('낚시를 마친 뒤 저장을 가져와 주세요.');return;}$('importFile').click();return;}
  if(cmd==='reset-confirm'){show('정말 처음부터 시작할까요?',`<p>이 브라우저에 저장된 금화, 장비, 도감과 여행 진행이 초기화됩니다. 보관할 기록이 있다면 설정에서 저장 파일을 먼저 내보내세요.</p><button class="danger-button" data-do="reset">모든 진행 초기화</button><button class="secondary" data-do="settings">취소하고 돌아가기</button>`,'reset');return;}
  if(cmd==='reset'){state=STARTER();save();view='town';close();resetIdle();openNickname();return;}

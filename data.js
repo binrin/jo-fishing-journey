@@ -1,6 +1,6 @@
 import {EXTRA_REGIONS,EXTRA_FISH} from './expansion-data.js';
 import {applyHabitatCleanup} from './fish-additions.js';
-// Static resource data for 조선생의 낚시여행.
+// Static resource data for 물결항 낚시일지.
 // Sources: analysis/original-fish-data.json, native/fish-prices-hp.json,
 // native/items-static.json and balance-model.json. No runtime APK execution.
 // FISH numerical arrays retain original grade order 0,1,2; -1 means unavailable.

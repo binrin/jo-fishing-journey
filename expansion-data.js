@@ -1,4 +1,4 @@
-// Entirely new expansion design for 조선생의 낚시여행. Not original-game research.
+// Entirely new expansion design for 물결항 낚시일지. Not original-game research.
 // Grade arrays: 0 large, 1 medium, 2 small. Region economy follows the proposed expansion model.
 // Duration target is a design goal; these data alone do not prove 350 hours of play.
 export const EXTRA_REGIONS = [

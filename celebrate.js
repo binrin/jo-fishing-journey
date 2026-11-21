@@ -4,6 +4,7 @@ const KINDS={
  'haggle-great':{ms:2600,particles:34,chars:['🪙','✦','💰','✧'],spread:[200,320],rays:true,shake:6},
  'haggle-success':{ms:1900,particles:16,chars:['🪙','✦'],spread:[170,230],ring:true,shake:2},
  'haggle-fail':{ms:1700,particles:6,chars:['💧','·'],spread:[50,40],drop:true},
+ 'forge-fail':{ms:1450,particles:8,chars:['','',''],spread:[165,40],drop:true,noFlash:true,decorative:true},
  forge:{ms:1800,particles:26,chars:['','','',''],spread:[190,260],spark:true,ring:true,shake:4},
  newgear:{ms:2000,particles:14,chars:['✨','✦','✧'],spread:[180,240],rays:true,sweep:true},
  home:{ms:2100,particles:30,chars:['','',''],spread:[180,60],confetti:true},
@@ -15,8 +16,8 @@ export function celebrate(kind,{icon='✨',title='',sub=''}={}){
  const k=KINDS[kind]||KINDS.newgear,reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const host=document.querySelector('dialog[open]')||document.body;
  host.querySelectorAll('.celebrate').forEach(n=>n.remove());
- const o=document.createElement('div');o.className=`celebrate k-${kind}`;o.setAttribute('aria-live','polite');
- let html='<i class="cb-flash"></i>';
+ const o=document.createElement('div');o.className=`celebrate k-${kind}`;o.setAttribute(k.decorative?'aria-hidden':'aria-live',k.decorative?'true':'polite');
+ let html=k.noFlash?'':'<i class="cb-flash"></i>';
  if(k.rays)html+='<i class="cb-rays"></i>';
  if(k.ring)html+='<i class="cb-ring"></i><i class="cb-ring r2"></i>';
  if(k.rune)html+='<i class="cb-rune"></i>';

@@ -152,7 +152,7 @@ function resultHTML(r,result){
 
 const DRIVE_KEYS={ArrowUp:'throttle',w:'throttle',ArrowDown:'brake',s:'brake',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right',' ':'boost'};
 
-export function createRaceUI({getState,body,modal,show,save,render,toast,spend,credit,canRace,sound,buzz}){
+export function createRaceUI({getState,body,modal,show,save,render,toast,enhancementFailed,spend,credit,canRace,sound,buzz}){
  let live=null,tier=0,slot=PARTS[0].id;
  const reset=()=>{if(live){live.abort();live=null;}};
  modal.addEventListener('close',()=>{if(!modal.open)reset();});
@@ -278,12 +278,15 @@ export function createRaceUI({getState,body,modal,show,save,render,toast,spend,c
   const [grade,part,maker]=id.split(':');
   if(!LEAGUES[Number(grade)]||!PARTS.some(p=>p.id===part))return true;
   tier=Number(grade);slot=part;
+  let failed=false;
   if(cmd!=='race-select'){
    const message=changeRacePart(s,{action:cmd.slice(5),tier,slot,maker},spend);
-   if(message)toast(message);
+   failed=cmd==='race-enhance'&&message==='강화 실패 · 강화 단계 유지';
+   if(message&&!failed)toast(message);
    save();
   }
   open('race-shop');
+  if(failed){sound('fail');enhancementFailed();}
   if(workshopFocus){
    const buttons=[...body.querySelectorAll('button[data-do]:not(:disabled)')];
    const next=buttons.find(el=>el.dataset.do===cmd&&el.dataset.id===id&&el.parentElement.getAttribute('aria-label')===groupLabel)

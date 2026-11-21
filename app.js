@@ -54,7 +54,7 @@ let targets=castTargets(),perfectCast=false;
 function showCastTarget(key){const zone=document.querySelector('.perfect-zone');zone.style.left=(targets[key]-.09)*100+'%';zone.style.width='18%';$('castLabel').textContent=(key==='direction'?'① 방향':'② 힘')+' 목표 '+Math.round(targets[key]*100)+'%';}
 let phase='idle',timer=0,cast=0,castDirection=0,castQuality=1,currentFish=null,currentGrade=2,fight=null,input=0,bossTrip=false,paused=false,panel='',last=performance.now(),hudClock=0,saveClock=0,toastTimer,context,reg=null,pendingCatch=null;
 const modal=$('modal'),body=$('modalBody');
-const racing=createRaceUI({getState:()=>state,body,modal,show,save,render,toast,spend,credit,canRace:()=>phase==='idle'&&!autoRunning(state)&&!state.tournament,sound,buzz});
+const racing=createRaceUI({getState:()=>state,body,modal,show,save,render,toast,enhancementFailed,spend,credit,canRace:()=>phase==='idle'&&!autoRunning(state)&&!state.tournament,sound,buzz});
 const fx=createCombatFX({scene:$('scene'),layer:$('combatEffects'),target:$('wildFish'),getState:()=>state});let hitClock=0;
 const tournamentFloats=createTournamentFloats($('scene'));
 const reelFeedback=createReelFeedback({sound,vibrate:buzz,cancelVibration:()=>{if(navigator.vibrate)navigator.vibrate(0);}});let dangerState='safe';
@@ -71,7 +71,25 @@ function save(){
   return false;
  }
 }
-function toast(text,ms=2600){clearTimeout(toastTimer);{const t=$('toast'),host=modal.open?modal:document.body;if(t.parentElement!==host)host.append(t);}$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,ms);}
+function toast(text,ms=2600,{announceOnly=false}={}){
+ clearTimeout(toastTimer);
+ const t=$('toast'),host=modal.open?modal:document.body;
+ if(t.parentElement!==host)host.append(t);
+ t.classList.toggle('toast-announce-only',announceOnly);
+ t.hidden=false;
+ t.replaceChildren(document.createTextNode(text));
+ toastTimer=setTimeout(()=>t.hidden=true,ms);
+}
+function enhancementFailed(){
+ const detail='금화는 차감되고 강화 단계는 유지돼요.';
+ celebrate('forge-fail',{icon:'⚒',title:'강화 실패',sub:detail});
+ toast(`강화 실패 · ${detail}`,1450,{announceOnly:true});
+}
+function clearEnhancementFailure(){
+ modal.querySelector('.k-forge-fail')?.remove();
+ const result=$('toast');
+ if(result.classList.contains('toast-announce-only'))result.hidden=true;
+}
 function sound(type='tap'){if(state.muted)return;try{
  if(['reel-wind','reel-release','line-danger'].includes(type)){
   context??=new (window.AudioContext||window.webkitAudioContext)();if(context.state==='suspended'){context.resume().catch(()=>{});return;}
@@ -85,7 +103,7 @@ function artPos(id){return `${(id%2)*100}% ${Math.floor(id/2)*25}%`;}
 let scrollTarget=0;
 modal.setAttribute('aria-labelledby','modalTitle');
 $('modalTitle').tabIndex=-1;
-function show(title,html,name=''){releaseInput();const same=modal.open&&name&&name===panel,top=body.scrollTop,opened=same?[...body.querySelectorAll('details')].map(d=>d.open):null;panel=name;$('closeModal').hidden=(name==='nickname-first'||name==='v4-reset');$('modalTitle').autofocus=(name==='nickname-first'||name==='v4-reset');$('modalTitle').textContent=title;body.innerHTML=html;if(same){body.querySelectorAll('details').forEach((d,i)=>{if(opened[i]!==undefined)d.open=opened[i];});}if(!modal.open)modal.showModal();if((name==='nickname-first'||name==='v4-reset'))$('modalTitle').focus({preventScroll:true});else $('closeModal').focus({preventScroll:true});scrollTarget=same?top:0;body.scrollTop=scrollTarget;requestAnimationFrame(()=>body.scrollTop=scrollTarget);}
+function show(title,html,name=''){releaseInput();const same=modal.open&&name&&name===panel,top=body.scrollTop,opened=same?[...body.querySelectorAll('details')].map(d=>d.open):null;clearEnhancementFailure();panel=name;$('closeModal').hidden=(name==='nickname-first'||name==='v4-reset');$('modalTitle').autofocus=(name==='nickname-first'||name==='v4-reset');$('modalTitle').textContent=title;body.innerHTML=html;if(same){body.querySelectorAll('details').forEach((d,i)=>{if(opened[i]!==undefined)d.open=opened[i];});}if(!modal.open)modal.showModal();if((name==='nickname-first'||name==='v4-reset'))$('modalTitle').focus({preventScroll:true});else $('closeModal').focus({preventScroll:true});scrollTarget=same?top:0;body.scrollTop=scrollTarget;requestAnimationFrame(()=>body.scrollTop=scrollTarget);}
 function openResetNotice(){
  show('4.0 업데이트로 새로 시작해요',`<p>새 낚시일지를 시작하면 이 브라우저에 보관된 기존 낚시 기록, 장비, 금화와 도감이 초기화돼요. 확인한 뒤 닉네임을 등록해 주세요.</p><div class="notice">기존 이용자 보상으로 경험치 2배권과 평판 2배권을 1개씩 받았어요. 설정의 업데이트 보상에서 원하는 때에 사용하면 각각 24시간 동안 효과가 적용돼요.</div><p>4.0 이전 저장 파일은 새 일지에서 가져올 수 없어요.</p><button class="primary" data-do="v4-reset-confirm">초기화하고 새 낚시일지 시작</button>`,'v4-reset');
 }
@@ -107,7 +125,7 @@ function leavePanel(){
  }
  close();
 }
-function close(){racing.reset();modal.close();panel='';releaseInput();save();render();}
+function close(){racing.reset();clearEnhancementFailure();modal.close();panel='';releaseInput();save();render();}
 $('closeModal').onclick=leavePanel;
 modal.addEventListener('cancel',e=>{e.preventDefault();leavePanel();});
 modal.addEventListener('click',e=>{if(e.target===modal){const r=modal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)leavePanel();}});
@@ -542,7 +560,34 @@ async function handleV2(cmd,id,b){
  if(['boats','boats-all','home','storage','skills','equipment','equipment-all'].includes(cmd)){openPanel(cmd);return true;}
  if(cmd==='town-confirm'){if(fight)state.hp=Math.max(0,fight.hero);if(completeContestCast())return true;save();view='town';resetIdle();close();return true;}
  if(cmd==='resume-fishing'){close();return true;}
- if(cmd.startsWith('equipment-')){if(phase!=='idle'){toast('낚시를 마치고 장비를 바꿔 주세요.');return true;}const [slot,tier]=id.split(':');const act=cmd.slice(10),ok=changeEquipment(state,act,slot,Number(tier));if(!ok)toast('금화·레벨·보유 장비와 외상을 확인해 주세요.');else if(ok==='failed')toast('강화 실패 · 금화는 차감되고 강화 단계는 유지됐어요.');else if(act!=='enhance'&&act!=='buy')toast('장비 변경을 완료했어요.');if(ok){sound(ok==='failed'?'fail':act==='enhance'?'hit':'catch');save();}openPanel(panel==='shop'||panel==='equipment-all'?panel:'equipment');const section=body.querySelector('[data-equipment-slot="'+slot+'"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}if(ok===true&&(act==='enhance'||act==='buy')){const ic={rod:'🎣',reel:'⚙️',float:'🔴',line:'🧵',hook:'🪝'}[slot]||'✨',nm=equipmentName(slot,Number(tier));if(act==='enhance'){const rk=ensureEquipment(state)[slot].owned[Number(tier)];celebrate('forge',{icon:ic,title:`강화 성공! +${rk}`,sub:nm});setTimeout(()=>sound('critical'),180);buzz([20,30,40]);}else{celebrate('newgear',{icon:ic,title:'새 장비!',sub:nm});buzz([20,40,20]);}}return true;}
+ if(cmd.startsWith('equipment-')){
+  if(phase!=='idle'){toast('낚시를 마치고 장비를 바꿔 주세요.');return true;}
+  const [slot,tierId]=id.split(':'),tier=Number(tierId),act=cmd.slice(10);
+  const result=changeEquipment(state,act,slot,tier);
+  const keepFocus=document.activeElement===b;
+  if(!result)toast('금화·레벨·보유 장비와 외상을 확인해 주세요.');
+  else if(act!=='enhance'&&act!=='buy')toast('장비 변경을 완료했어요.');
+  if(result){sound(result==='failed'?'fail':act==='enhance'?'hit':'catch');save();}
+  openPanel(panel==='shop'||panel==='equipment-all'?panel:'equipment');
+  const section=body.querySelector(`[data-equipment-slot="${slot}"]`);
+  if(section){
+   section.open=true;
+   section.scrollIntoView({block:'nearest'});
+   if(keepFocus){
+    [...section.querySelectorAll('button:not(:disabled)')].find(button=>button.dataset.do===cmd&&button.dataset.id===id)?.focus({preventScroll:true});
+   }
+  }
+  if(result==='failed')enhancementFailed();
+  if(result===true&&(act==='enhance'||act==='buy')){
+   const icon={rod:'🎣',reel:'⚙️',float:'🔴',line:'🧵',hook:'🪝'}[slot]||'✨',name=equipmentName(slot,tier);
+   if(act==='enhance'){
+    const rank=ensureEquipment(state)[slot].owned[tier];
+    celebrate('forge',{icon,title:`강화 성공! +${rank}`,sub:name});
+    setTimeout(()=>sound('critical'),180);buzz([20,30,40]);
+   }else{celebrate('newgear',{icon,title:'새 장비!',sub:name});buzz([20,40,20]);}
+  }
+  return true;
+ }
  const ops=['boat-buy','boat-select','boat-sell-confirm','boat-sell','home-upgrade','sleep','store-fish','withdraw-fish','store-all','withdraw-all','skill-learn','skill-equip','v2-travel','v2-boss','bait-buy','bait-buy50','bait-emergency','skill-reset-confirm','skill-reset'];
  if(!ops.includes(cmd))return false;
  if(phase!=='idle'){toast('진행 중인 낚시를 마치거나 마을로 귀항한 뒤 이용해 주세요.');return true;}

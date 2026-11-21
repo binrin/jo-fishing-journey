@@ -181,3 +181,13 @@
 .water-net-reward{align-items:center;grid-template-columns:48px minmax(0,1fr)}
 .auto-rules{margin-top:10px}
 .auto-rules summary{display:list-item;cursor:pointer;font-weight:700;padding:8px 0}
+
+/* The same brief failure effect runs above both enhancement screens. */
+.k-forge-fail{--cb-bg:#fff1eb;--cb-line:#ae503b;--cb-ink:#6c2a21;--cb-sub:#694039;--cb-ms:1.45s}
+.k-forge-fail .cb-card{padding:12px 18px;gap:4px;animation:forge-fail-impact .28s ease-out both,cb-out .24s ease-in 1.21s forwards}
+.k-forge-fail .cb-title{font-size:22px}
+.k-forge-fail .cb-icon{font-size:32px;line-height:1;color:#8b3025;animation:none}
+.k-forge-fail .cb-p{width:5px;height:5px;border-radius:50%;background:#bc4b35;animation-duration:.55s}
+@keyframes forge-fail-impact{0%{opacity:0;transform:translateY(-8px) scale(.94)}50%{opacity:1;transform:translateX(-4px)}75%{transform:translateX(3px)}100%{opacity:1;transform:none}}
+.toast.toast-announce-only{clip-path:inset(50%);width:1px;height:1px;min-width:0;min-height:0;padding:0;border:0;overflow:hidden;white-space:nowrap;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.k-forge-fail .cb-card{animation:none}}

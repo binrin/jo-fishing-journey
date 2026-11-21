@@ -8,14 +8,17 @@ import {fishLength,restoreTournament} from './tournament.js';
 import {speciesFightFactor,speciesPriceFactor} from './species-traits.js';
 import {BOATS,TACKLE,HOMES,SKILLS,BAITS,playerLevel,availableSP,catchXP,skillRequiredLevel,boatForRegion,gearRequiredLevel,REGION_LEVELS,boatPerks,LEGACY_BAIT,TROPHY_BAIT,FIGHT_SCALE} from './progression.js';
 import {ACTIVE_SLOTS,DEFAULT_ACTIVE_SKILLS,SKILL_BY_ID,activeSkillFamily} from './progression.js';
-import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff,rewardBoosts,boostMultiplier} from './systems.js';
+import {baitWeight,gradeOdds,baitQuality,baitInfo,regionProfile,REP_MAX,repSaleMult,repPrice,addRep,haggleRoll,HAGGLE_MULT,mealBuff,rewardBoosts,boostMultiplier} from './systems.js';
 import {normalizeNickname} from './nickname.js';
-export const VERSION='4.1.1',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
+export const VERSION='4.2.0',TITLE='물결항 낚시일지',SAVE_KEY='joseonsaeng-fishing-v4',SAVE_GENERATION=4;
 export const WATER_NET=Object.freeze({name:'물빛 어망',dropChance:.01,durationMs:30*60*1000,trophyBonus:.10,ornamentalChance:.04});
 const emptyWaterNet=()=>({count:0,startedAt:0,until:0});
 export function waterNetRemaining(s,now=Date.now()){
  const net=s.waterNet;
  return net&&net.startedAt<=now&&now<net.until?net.until-now:0;
+}
+export function waterNetCanStore(s,now=Date.now()){
+ return waterNetRemaining(s,now)>0&&s.bag.length<capacity(s);
 }
 export function activateWaterNet(s,now=Date.now()){
  const net=s.waterNet;
@@ -25,21 +28,19 @@ export function activateWaterNet(s,now=Date.now()){
  net.until=now+WATER_NET.durationMs;
  return true;
 }
-export function endWaterNetIfFull(s,now=Date.now()){
- if(s.bag.length>=capacity(s)&&waterNetRemaining(s,now))s.waterNet.until=now;
-}
 function restoreWaterNet(raw){
  const net=emptyWaterNet();
  if(Number.isSafeInteger(raw?.count)&&raw.count>=0)net.count=raw.count;
- if(Number.isSafeInteger(raw?.startedAt)&&raw.startedAt>=0&&Number.isSafeInteger(raw.until)&&raw.until>=raw.startedAt&&raw.until-raw.startedAt<=WATER_NET.durationMs){
+ if(Number.isSafeInteger(raw?.startedAt)&&raw.startedAt>=0&&Number.isSafeInteger(raw.until)&&raw.until>=raw.startedAt&&raw.until>0&&raw.until-raw.startedAt<=WATER_NET.durationMs&&Number.isSafeInteger(raw.startedAt+WATER_NET.durationMs)){
   net.startedAt=raw.startedAt;
-  net.until=raw.until;
+  // Earlier releases shortened the deadline when the tank filled.
+  net.until=net.startedAt+WATER_NET.durationMs;
  }
  return net;
 }
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const LEVEL_HP=2,REPEAT_BOSS_CHANCE=.04;
-export const STARTER=()=>({schema:4,generation:SAVE_GENERATION,resetNotice:false,rewardBoosts:rewardBoosts(),waterNet:emptyWaterNet(),nickname:'',coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',trophyBait:0,pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:[...DEFAULT_ACTIVE_SKILLS],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
+export const STARTER=()=>({schema:4,generation:SAVE_GENERATION,resetNotice:false,rewardBoosts:rewardBoosts(),waterNet:emptyWaterNet(),nickname:'',coins:0,debt:0,region:0,unlocked:0,gear:Array(REGIONS.length).fill(0),counts:Array(REGIONS.length).fill(0),bosses:[],bag:[],homeFish:[],collection:{},records:{},repSaleSpecies:[],aquarium:[],fame:0,caught:0,attempts:0,seconds:0,dayOffset:0,bait:'worm1',trophyBait:0,pity:Array(REGIONS.length).fill(0),bagLevel:0,ended:false,tutorial:true,muted:false,haptics:true,stats:{earned:0,spent:0,failures:0},savedAt:Date.now(),xp:0,boat:0,ownedBoats:[0],boatLicense:0,tackle:0,tackleUpgrade:0,skills:{},equippedSkills:[...DEFAULT_ACTIVE_SKILLS],baitStock:Object.fromEntries(BAITS.map(b=>[b.id,b.id==='worm1'?30:0])),rep:0,foods:{},meal:null,home:0,hp:100,regionSpecies:{},trophies:Array(REGIONS.length).fill(0),legendTrophy:false});
 export const region=s=>REGIONS[s.region];
 export const capacity=s=>BOATS[s.boat].capacity;
 export function levelBonuses(s){const gained=playerLevel(s)-1;return {hp:gained*LEVEL_HP,power:gained/100,tension:gained*.003};}
@@ -112,6 +113,14 @@ export function quote(s,f,g){if(f.boss)return Math.round(region(s).boss_reward*(
  // Real-value species factor (spot average 1) x the grade's share of the species' own price list.
  const m=f.ornamental?clamp(own/avg,.45,2.1):speciesPriceFactor(f,s.region)*own/(valid.reduce((a,b)=>a+b,0)/valid.length);
  return Math.max(1,Math.round(region(s).value*m*(1+(s.skills.economy||0)*.03)*SALE_BOOST));}
+export function addCatchReputation(s,f,g,{size=0,automatic=false,now=Date.now()}={}){
+ const previous=s.rep||0,record=s.records[f.id]||0;
+ let gain=(s.collection[f.id]||0)>0?0:1.5;
+ if(f.boss&&!s.bosses.includes(f.id))gain+=3;
+ if(!f.boss&&g===0)gain+=.75;
+ if(record>0&&size>=Math.ceil(record*105/100))gain+=.75;
+ return gain?addRep(s,gain*(automatic?.5:1),now)-previous:0;
+}
 export function addCatch(s,f,g,quality=1,{trophyBait=false,autoXp=null,now=Date.now(),rng=Math.random}={}){
  const automatic=autoXp!==null;
  if(s.bag.length>=capacity(s)||automatic&&f.boss||trophyBait&&(!(s.trophyBait>0)||f.boss||f.ornamental||g!==0||f.hp[0]<=0||!f.regions.includes(s.region)))return null;
@@ -135,7 +144,7 @@ export function addCatch(s,f,g,quality=1,{trophyBait=false,autoXp=null,now=Date.
  s.counts[s.region]++;
  s.fame+=f.boss?20:2;
  gainXP(s,xp);
- addRep(s,automatic?.1:.2,now);
+ const repGain=addCatchReputation(s,f,g,{size:entry.size,automatic,now});
  s.collection[f.id]=(s.collection[f.id]||0)+1;
  s.records[f.id]=Math.max(s.records[f.id]||0,entry.size);
  if(f.boss&&!s.bosses.includes(f.id))s.bosses.push(f.id);
@@ -144,19 +153,34 @@ export function addCatch(s,f,g,quality=1,{trophyBait=false,autoXp=null,now=Date.
  if(trophyBait)s.trophyBait--;
  if(!automatic&&s.waterNet.count<Number.MAX_SAFE_INTEGER&&rng()<WATER_NET.dropChance){
   s.waterNet.count++;
-  return {...entry,waterNetDrop:true};
+  return {...entry,repGain,waterNetDrop:true};
  }
- return entry;
+ return {...entry,repGain};
 }
-// Sale methods: normal (100%), discount = reputation sale (80%, reputation +0.5 per fish),
+function newDiscountSpecies(s,items){
+ const credited=new Set(s.repSaleSpecies);
+ return [...new Set(items.filter(x=>!FISH[x.id].boss&&x.grade<2&&!credited.has(x.id)).map(x=>x.id))];
+}
+export function discountRepPreview(s,items,now=Date.now()){
+ const gain=newDiscountSpecies(s,items).length*.5*boostMultiplier(s,'rep',now);
+ return Math.min(gain,REP_MAX-(s.rep||0));
+}
+// Sale methods: normal (100%), discount = reputation sale (80%, +0.5 for each new eligible species),
 // bold = haggle (1% x3 / 10% x2 / otherwise x0.5, odds grow with luck). Reputation scales every sale by up to +-10%.
-export function sell(s,ids,method='normal',rng=Math.random){const wanted=new Set(ids),sold=s.bag.filter(x=>wanted.has(x.uid));if(!sold.length)return {gross:0,fee:0,net:0,count:0,success:false,outcome:null};
+export function sell(s,ids,method='normal',rng=Math.random){const wanted=new Set(ids),sold=s.bag.filter(x=>wanted.has(x.uid));if(!sold.length)return {gross:0,fee:0,net:0,count:0,success:false,outcome:null,repChange:0};
+ const now=Date.now(),previousRep=s.rep||0;
  const outcome=method==='bold'?haggleRoll(s,rng):null,mult=method==='discount'?.8:method==='bold'?HAGGLE_MULT[outcome]:1,rm=repSaleMult(s);
  const gross=Math.round(sold.reduce((a,f)=>a+f.value*(f.boss?1:mult)*rm,0)),fee=Math.min(gross,Math.round(sold.filter(x=>!x.boss).reduce((a,f)=>a+REGIONS[f.region].expense_on_sale,0)));
  s.bag=s.bag.filter(x=>!wanted.has(x.uid));credit(s,gross-fee);s.stats.spent+=fee;
- if(method==='discount')addRep(s,Math.max(1,sold.length*.5));else if(method==='bold')addRep(s,outcome==='great'?2:outcome==='success'?1:-1);
+ if(method==='discount'){
+  const species=newDiscountSpecies(s,sold);
+  if(species.length){
+   s.repSaleSpecies.push(...species);
+   addRep(s,species.length*.5,now);
+  }
+ }else if(outcome==='fail')addRep(s,-1,now);
  s.fame=Math.max(0,s.fame+(method==='discount'?2:1)*sold.length);
- return {gross,fee,net:gross-fee,count:sold.length,success:outcome!=='fail',outcome};}
+ return {gross,fee,net:gross-fee,count:sold.length,success:outcome!=='fail',outcome,repChange:s.rep-previousRep};}
 function verifyFishArray(a,max){if(!Array.isArray(a)||a.length>max)throw Error('수족관 정보가 손상되었습니다.');return a.map(x=>{if(!x||!Number.isInteger(x.id)||!FISH[x.id]||![0,1,2].includes(x.grade)||!Number.isFinite(x.value)||x.value<0||!REGIONS[x.region]||typeof x.uid!=='string'||!Number.isFinite(x.size)||x.size<0)throw Error('물고기 정보가 손상되었습니다.');const weightKg=Number.isFinite(x.weightKg)&&x.weightKg>0?x.weightKg:fishWeight(FISH[x.id],x.grade);const pricePerKg=Number.isFinite(x.pricePerKg)&&x.pricePerKg>0?x.pricePerKg:x.value/weightKg;return {...x,weightKg,pricePerKg,boss:FISH[x.id].boss};});}
 function restoreAuto(raw,currentRegion){
  if(!raw||typeof raw!=='object')return null;
@@ -168,7 +192,7 @@ function restoreAuto(raw,currentRegion){
   ?{id:cast.id,g:cast.g,dur:cast.dur,...(net?{net:true}:{})}:null;
  return {on:Boolean(raw.on)&&Number.isFinite(raw.last),since:number(raw.since),last:number(raw.last),acc:Math.min(number(raw.acc),1e9),next,region,
   bait:BAITS.find(b=>b.id===raw.bait&&b.tier===1)?.id||null,caught:number(raw.caught),kept:number(raw.kept),missed:number(raw.missed),
-  trophies:number(raw.trophies),ran:number(raw.ran),bought:number(raw.bought),spent:number(raw.spent),gold:number(raw.gold),xp:number(raw.xp),
+  trophies:number(raw.trophies),ran:number(raw.ran),bought:number(raw.bought),spent:number(raw.spent),gold:number(raw.gold),xp:number(raw.xp),repGain:number(raw.repGain),
   used:number(raw.used),reason:String(raw.reason||''),seen:raw.seen!==false,ended:number(raw.ended)};
 }
 export function validateSave(raw){
@@ -178,6 +202,7 @@ export function validateSave(raw){
  for(const k of ['coins','debt','region','unlocked','fame','caught','attempts','seconds','dayOffset']){if(!Number.isFinite(raw[k])||raw[k]<0)throw Error('저장값이 손상되었습니다.');s[k]=raw[k];}if(!Number.isInteger(s.region)||!Number.isInteger(s.unlocked)||s.region>s.unlocked||s.unlocked>=REGIONS.length)throw Error('잘못된 지역 정보입니다.');
  for(const k of ['counts','pity']){if(!Array.isArray(raw[k])||raw[k].length!==REGIONS.length||raw[k].some(n=>!Number.isInteger(n)||n<0))throw Error('성장 정보가 손상되었습니다.');s[k]=Array.from({length:REGIONS.length},(_,i)=>raw[k][i]||0);}
  s.bag=verifyFishArray(raw.bag,BOATS.at(-1).capacity);for(const k of ['collection','records']){if(!raw[k]||typeof raw[k]!=='object'||Array.isArray(raw[k]))throw Error('도감 정보가 손상되었습니다.');for(const [id,n]of Object.entries(raw[k]))if(FISH[id]&&Number.isFinite(n)&&n>=0)s[k][id]=n;}
+ s.repSaleSpecies=Array.isArray(raw.repSaleSpecies)?[...new Set(raw.repSaleSpecies.filter(id=>Number.isInteger(id)&&FISH[id]&&!FISH[id].boss))]:[];
  const caughtBosses=FISH.filter(f=>f.boss&&s.collection[f.id]>0).map(f=>f.id);
  s.bosses=[...new Set([...caughtBosses,...(Array.isArray(raw.bosses)?raw.bosses.map(Number):[])].filter(id=>FISH[id]?.boss))];s.aquarium=[...new Set((Array.isArray(raw.aquarium)?raw.aquarium:[]).filter(id=>FISH[id]?.ornamental&&s.collection[id]))].slice(0,10);
  for(const k of ['ended','tutorial','muted','haptics'])s[k]=Boolean(raw[k]);s.trophyBait=Number.isSafeInteger(raw.trophyBait)&&raw.trophyBait>=0?raw.trophyBait:0;

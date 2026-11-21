@@ -3,9 +3,9 @@
 // Ordinary catches are sold on the spot. A water net stores catches and can lure ornamentals.
 import {raceMaterial} from './race.js';
 import {FISH} from './data.js';
-import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice,gainXP,addCatch,WATER_NET,waterNetRemaining,endWaterNetIfFull} from './engine.js';
+import {chooseFish,fishGrade,quote,credit,waitSeconds,fightPlan,buyBait,baitPrice,gainXP,addCatch,addCatchReputation,WATER_NET,waterNetCanStore} from './engine.js';
 import {catchXP,BAITS,playerLevel,activeSkillFamily} from './progression.js';
-import {luck,regionProfile,boostMultiplier,addRep} from './systems.js';
+import {luck,regionProfile,boostMultiplier} from './systems.js';
 // Auto fishing uses the basic (first-grade) bait of the spot's recommended family, buying one at a time
 // with coins when none is left. A run has no time limit: it lasts until the coins run out or it is stopped.
 export function autoBait(s){const fam=regionProfile(s.region).recommended,b=BAITS.find(x=>x.id===fam+'1');return b&&playerLevel(s)>=(b.level||1)?b.id:'worm1';}
@@ -14,7 +14,7 @@ export const AUTO_SALE=.25,AUTO_XP=.25,AUTO_SUCCESS=.9,AUTO_CAST=4,AUTO_RESULT=2
 // luck lets a trophy (월척) bite even on auto: 1% at luck 0 (the minimum), +0.03%p per luck, up to 10%.
 export const AUTO_REP_BONUS=.15,AUTO_TROPHY_MIN=.01,AUTO_TROPHY_PER_LUCK=.0003,AUTO_TROPHY_MAX=.1;
 export function autoRates(s,now=Date.now()){const r=Math.max(0,Math.min(100,s.rep||0))/100,L=Math.max(0,luck(s));
- const bonus=waterNetRemaining(s,now)?WATER_NET.trophyBonus:0;
+ const bonus=waterNetCanStore(s,now)?WATER_NET.trophyBonus:0;
  return {sale:AUTO_SALE+AUTO_REP_BONUS*r,xp:AUTO_XP+AUTO_REP_BONUS*r,trophy:Math.min(AUTO_TROPHY_MAX,AUTO_TROPHY_MIN+L*AUTO_TROPHY_PER_LUCK)+bonus,luck:L};}
 
 export function autoRunning(s){return Boolean(s.auto&&s.auto.on);}
@@ -25,7 +25,7 @@ export function canStartAuto(s){
 }
 export function startAuto(s,now=Date.now()){
  if(canStartAuto(s))return false;
- s.auto={on:true,since:now,last:now,acc:0,ran:0,next:null,region:s.region,bait:autoBait(s),caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,used:0,bought:0,spent:0,reason:'',seen:true};
+ s.auto={on:true,since:now,last:now,acc:0,ran:0,next:null,region:s.region,bait:autoBait(s),caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,repGain:0,used:0,bought:0,spent:0,reason:'',seen:true};
  return true;
 }
 export function stopAuto(s,reason='stop'){if(!s.auto)return null;s.auto.on=false;s.auto.reason=reason;s.auto.next=null;s.auto.ended=Date.now();s.auto.seen=reason==='stop';return s.auto;}
@@ -60,13 +60,12 @@ export function autoPace(s){const pool=FISH.filter(x=>x.regions.includes(s.regio
 
 // Settle everything that happened between the last tick and `now`. Returns what this tick added.
 export function autoTick(s,now=Date.now(),rng=Math.random){
- const a=s.auto,got={caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,used:0,bought:0,spent:0,ids:{}};if(!a||!a.on||now<a.last)return got;
+ const a=s.auto,got={caught:0,kept:0,missed:0,trophies:0,gold:0,xp:0,repGain:0,used:0,bought:0,spent:0,ids:{}};if(!a||!a.on||now<a.last)return got;
  a.acc+=(now-a.last)/1000;a.last=now;
  for(let guard=0;guard<100000;guard++){
   if(!a.next){
    const castAt=Math.round(now-a.acc*1000);
-   endWaterNetIfFull(s,castAt);
-   const net=waterNetRemaining(s,castAt)>0;
+   const net=waterNetCanStore(s,castAt);
    const id=a.bait??(a.bait=autoBait(s));
    if(!(s.baitStock[id]>0)){const price=baitPrice(s,id);if(!buyBait(s,id,1)){stopAuto(s,'money');a.ended=now-a.acc*1000;break;}a.bought=(a.bought||0)+1;a.spent=(a.spent||0)+price;got.bought++;got.spent+=price;}
    const prev=s.bait;s.bait=id;const pick=autoFish(s,rng,castAt,net);s.bait=prev;if(!pick){stopAuto(s,'empty');a.ended=castAt;break;}
@@ -80,21 +79,21 @@ export function autoTick(s,now=Date.now(),rng=Math.random){
   if(!f||f.boss||f.ornamental&&!net||rng()>AUTO_SUCCESS){a.missed++;got.missed++;continue;}
   const caughtAt=now-a.acc*1000;
   const rate=autoRates(s,caughtAt),xp=Math.max(1,Math.round(catchXP(s.region,f,g)*rate.xp))*boostMultiplier(s,'xp',caughtAt);
-  let gold=0;
+  const previousRep=s.rep||0;
+  let gold=0,kept=false;
   if(net){
    const prev=s.bait;s.bait=a.bait;
-   const item=addCatch(s,f,g,1,{autoXp:xp,now:caughtAt});
+   kept=Boolean(addCatch(s,f,g,1,{autoXp:xp,now:caughtAt}));
    s.bait=prev;
-   endWaterNetIfFull(s,Math.round(caughtAt));
-   if(!item){
-    a.missed++;got.missed++;
-    continue;
-   }
+  }
+  if(kept){
    a.kept=(a.kept||0)+1;got.kept++;
   }else{
    gold=Math.max(1,Math.round(quote(s,f,g)*rate.sale));
-   credit(s,gold);gainXP(s,xp);addRep(s,.1,caughtAt);s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;raceMaterial(s,f,g,a.region,true);
+   credit(s,gold);gainXP(s,xp);addCatchReputation(s,f,g,{automatic:true,now:caughtAt});s.collection[f.id]=(s.collection[f.id]||0)+1;s.stats.autoCaught=(s.stats.autoCaught||0)+1;raceMaterial(s,f,g,a.region,true);
   }
+  const repGain=s.rep-previousRep;
+  a.repGain=(a.repGain||0)+repGain;got.repGain+=repGain;
   if(g===0){a.trophies=(a.trophies||0)+1;got.trophies++;}
   a.caught++;a.gold+=gold;a.xp+=xp;got.caught++;got.gold+=gold;got.xp+=xp;got.ids[f.id]=(got.ids[f.id]||0)+1;
  }

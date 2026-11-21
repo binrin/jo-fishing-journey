@@ -1,6 +1,6 @@
 import {ensureEquipment,fullyEquipped,changeEquipment,equipmentStats,equipmentName} from './equipment.js';
 import {createRaceUI} from './race-ui.js';
-import {credit,WATER_NET,waterNetRemaining,activateWaterNet} from './engine.js';
+import {credit,discountRepPreview,WATER_NET,waterNetRemaining,waterNetCanStore,activateWaterNet} from './engine.js';
 import {loadCurrentSave,keepRewardHistory,discardLegacySaves} from './save-generation.js';
 import {REWARD_BOOSTS,BOOST_DURATION,useRewardBoost} from './systems.js';
 import {celebrate} from './celebrate.js';
@@ -149,12 +149,21 @@ function resumeNamedGame(){
  if(state.tournament&&restoreContestCast())return;
  if(state.tutorial)openPanel('help');
 }
+const repNumber=new Intl.NumberFormat('ko-KR',{maximumFractionDigits:3});
+function repDelta(amount){
+ const rounded=Math.round(amount*1000)/1000;
+ return (rounded>0?'+':'')+repNumber.format(rounded||0);
+}
 function autoCatchLine(a){
  return `${fmt(a.caught)}마리 · ${a.kept?`보관 ${fmt(a.kept)} · `:''}판매 +${fmt(a.gold)} G`;
 }
 function waterNetClock(remaining){
  const seconds=Math.ceil(remaining/1000);
  return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+}
+function autoModeLabel(){
+ if(!waterNetRemaining(state))return '자동 판매 중';
+ return waterNetCanStore(state)?'물빛 어망으로 보관 중':'수족관 가득 참 · 자동 판매 중';
 }
 function renderAuto(){
  const on=autoRunning(state),a=state.auto,btn=$('autoBtn'),ov=$('autoOverlay'),pill=$('autoPill'),remaining=waterNetRemaining(state);
@@ -164,11 +173,11 @@ function renderAuto(){
  btn.classList.toggle('active',on);
  ov.hidden=!(on&&view==='fish');
  if(!on)return;
- const mode=remaining?`물빛 어망 ${waterNetClock(remaining)} · 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))}`:`자동 판매 중 · 미끼 자동 구매 ${fmt(a.bought||0)}개`;
+ const mode=remaining?`${waterNetCanStore(state)?'물빛 어망':'어망 대기 · 자동 판매'} ${waterNetClock(remaining)}`:`자동 판매 중 · 미끼 자동 구매 ${fmt(a.bought||0)}개`;
  const key=JSON.stringify([autoCatchLine(a),a.xp,state.waterNet.count,!!remaining]);
  if(ov.dataset.renderKey===key){ov.querySelector('small').textContent=mode;return;}
  ov.dataset.renderKey=key;
- ov.innerHTML=`<b>🤖 자동 낚시 중</b><span>${autoCatchLine(a)} · +${fmt(a.xp)} EXP</span><small>${mode}</small><div class="auto-overlay-actions">${state.waterNet.count&&!remaining?'<button type="button" data-do="auto">물빛 어망</button>':''}<button type="button" data-do="auto-stop">멈추기</button></div>`;
+ ov.innerHTML=`<b>🤖 자동 낚시 중</b><span>${autoCatchLine(a)} · +${fmt(a.xp)} EXP</span><small>${mode}</small><div class="auto-overlay-actions">${remaining||state.waterNet.count?'<button type="button" data-do="auto">물빛 어망</button>':''}<button type="button" data-do="auto-stop">멈추기</button></div>`;
 }
 function render(){renderAuto();
  const lvl=playerLevel(state);$('headerProgress').textContent=`Lv.${lvl} · ${lvl>=MAX_LEVEL?'MAX':`EXP ${fmt(state.xp-xpForLevel(lvl))} / ${fmt(xpForLevel(lvl+1)-xpForLevel(lvl))}`}`;$('game').classList.toggle('town-view',view==='town');$('playerBadge').textContent=state.nickname||`${lvl>=95?'전설에 도전하는 낚시꾼':lvl>=70?'대양의 명인':lvl>=50?'신비의 바다 탐험가':lvl>=25?'바다의 숙련자':'성장하는 낚시꾼'}`;$('playerBadge').title=state.nickname;$('townHP').textContent=`체력 ${Math.ceil(state.hp)} / ${maxHP(state)}`;$('xpBar').style.width=`${lvl>=MAX_LEVEL?100:(state.xp-xpForLevel(lvl))/(xpForLevel(lvl+1)-xpForLevel(lvl))*100}%`;
@@ -268,7 +277,7 @@ function showContestResult(){
  return true;
 }
 function fail(message){const keptTrophyBait=!bossTrip&&state.bait===TROPHY_BAIT.id;if(fight)state.hp=Math.max(0,fight.hero);state.fame=Math.max(0,state.fame-1);addRep(state,-.5);state.stats.failures++;if(completeContestCast())return;save();sound('fail');resetIdle(message);show('아쉽게 놓쳤어요',`<p>${message}</p><div class="notice">물고기가 가는 방향의 <b>반대쪽 수면</b>을 터치해서 줄을 감으세요. 줄이 빨개지면 <b>수면에서 손을 떼고</b> 줄을 풀어 주세요.</div><p class="muted">${keptTrophyBait?'월척확정 미끼는 그대로 남아 다시 사용할 수 있어요.':'미끼를 한 개 사용했어요.'}</p><button class="primary" data-do="retry">다시 낚시하기</button>`,'result');}
-function caught(){state.hp=Math.max(0,fight.hero);const oldLevel=playerLevel(state),firstBoss=fight.fish.boss&&!state.bosses.includes(fight.fish.id);const item=addCatch(state,fight.fish,fight.grade,perfectCast?1.1:.92+Math.random()*.16,{trophyBait:!bossTrip&&state.bait===TROPHY_BAIT.id});if(!item){if(completeContestCast())return;resetIdle();save();toast('보관함을 확인해 주세요.');return;}fight.hero=state.hp;if(completeContestCast(item.size)){if(item.waterNetDrop)toast('물빛 어망을 발견했어요! 자동 낚시 메뉴에서 쓸 수 있어요.',4000);return;}pendingCatch=item;save();if(playerLevel(state)>oldLevel)toast(`레벨 업! Lv.${playerLevel(state)} · 스킬 포인트를 확인하세요.`,4000);sound('catch');buzz([30,50,30]);resetIdle('멋진 한 마리! 여행 수첩에 기록했어요.');const f=FISH[item.id];show('월척! 잘 잡았어요',`<div class="catch-heading"><small>${f.boss?'전설의 보스 포획':f.ornamental?'반짝이는 관상어':'오늘의 작은 발견'}</small><div class="catch-art">${sprite(f.id)}</div><h3>${f.name}</h3><p>${['대형','중형','소형'][item.grade]} · ${item.size}cm · ${weightLabel(item)} · ${REGIONS[item.region].name}</p></div><div class="stat-pills"><span>판매가 <b>${fmt(item.value)} G</b></span><span>도감 <b>${Object.keys(state.collection).length}/${FISH.length}</b></span><span><b>+${item.xp} EXP</b></span></div>${item.waterNetDrop?`<div class="water-net-card water-net-reward"><img src="assets/moon-net.webp" alt=""><div><strong>물빛 어망 +1</strong><p>자동 낚시 메뉴에서 사용할 수 있어요.</p></div></div>`:''}${item.raceMaterial?`<p class="notice">개조 재료 · ${item.raceMaterial.name} +${item.raceMaterial.count}</p>`:''}<button class="primary" data-do="sell-catch">바로 판매 · ${fmt(Math.max(0,item.value-(item.boss?0:REGIONS[item.region].expense_on_sale)))} G</button><button class="secondary" data-do="retry">보관하고 계속 낚시</button>${f.legendary?'<button class="primary" data-do="finish">전설의 여행 엔딩 보기</button>':''}${firstBoss?'<p class="notice">보스 단서를 여행 수첩에 기록했어요. 마지막 전설어를 잡았다면 엔딩과 집 기념관을 확인하세요.</p>':''}`,'result');}
+function caught(){state.hp=Math.max(0,fight.hero);const oldLevel=playerLevel(state),firstBoss=fight.fish.boss&&!state.bosses.includes(fight.fish.id);const item=addCatch(state,fight.fish,fight.grade,perfectCast?1.1:.92+Math.random()*.16,{trophyBait:!bossTrip&&state.bait===TROPHY_BAIT.id});if(!item){if(completeContestCast())return;resetIdle();save();toast('보관함을 확인해 주세요.');return;}fight.hero=state.hp;if(completeContestCast(item.size)){if(item.waterNetDrop)toast('물빛 어망을 발견했어요! 자동 낚시 메뉴에서 쓸 수 있어요.',4000);return;}pendingCatch=item;save();if(playerLevel(state)>oldLevel)toast(`레벨 업! Lv.${playerLevel(state)} · 스킬 포인트를 확인하세요.`,4000);sound('catch');buzz([30,50,30]);resetIdle('멋진 한 마리! 여행 수첩에 기록했어요.');const f=FISH[item.id];show('월척! 잘 잡았어요',`<div class="catch-heading"><small>${f.boss?'전설의 보스 포획':f.ornamental?'반짝이는 관상어':'오늘의 작은 발견'}</small><div class="catch-art">${sprite(f.id)}</div><h3>${f.name}</h3><p>${['대형','중형','소형'][item.grade]} · ${item.size}cm · ${weightLabel(item)} · ${REGIONS[item.region].name}</p></div><div class="stat-pills"><span>판매가 <b>${fmt(item.value)} G</b></span><span>도감 <b>${Object.keys(state.collection).length}/${FISH.length}</b></span><span><b>+${item.xp} EXP</b></span></div>${item.repGain>0?`<p class="notice">평판 <b>${repDelta(item.repGain)}</b></p>`:''}${item.waterNetDrop?`<div class="water-net-card water-net-reward"><img src="assets/moon-net.webp" alt=""><div><strong>물빛 어망 +1</strong><p>자동 낚시 메뉴에서 사용할 수 있어요.</p></div></div>`:''}${item.raceMaterial?`<p class="notice">개조 재료 · ${item.raceMaterial.name} +${item.raceMaterial.count}</p>`:''}<button class="primary" data-do="sell-catch">바로 판매 · ${fmt(Math.max(0,item.value-(item.boss?0:REGIONS[item.region].expense_on_sale)))} G</button><button class="secondary" data-do="retry">보관하고 계속 낚시</button>${f.legendary?'<button class="primary" data-do="finish">전설의 여행 엔딩 보기</button>':''}${firstBoss?'<p class="notice">보스 단서를 여행 수첩에 기록했어요. 마지막 전설어를 잡았다면 엔딩과 집 기념관을 확인하세요.</p>':''}`,'result');}
 function rodTip(){const scene=$('scene').getBoundingClientRect(),hero=document.querySelector('#scene>.hero').getBoundingClientRect();return {x:(hero.left-scene.left+hero.width*.52)/scene.width*1000,y:(hero.top-scene.top+hero.height*.035)/scene.height*1000};}
 function drawLine(x,y,sag=0){const tip=rodTip();$('fishingLine').setAttribute('d',`M${tip.x} ${tip.y} Q${(tip.x+x)/2} ${(tip.y+y)/2+sag} ${x} ${y}`);}
 function castVisual(dt){const active=['waiting','bite'].includes(phase);$('game').classList.toggle('casting-mode',active);if(!active)return;castFlight=Math.min(1,castFlight+dt/.65);const t=1-(1-castFlight)**2,tip=rodTip(),x=tip.x+(castTarget.x-tip.x)*t,y=tip.y+(castTarget.y-tip.y)*t-Math.sin(t*Math.PI)*90;$('bobber').style.left=x/10+'%';$('bobber').style.top=y/10+'%';drawLine(x,y,castFlight<1?-30:25);}
@@ -290,25 +299,26 @@ function tick(now){const dt=Math.min(.08,(now-last)/1000);last=now;
 }
 function openPanel(name){
  if(name==='race'||name==='race-shop'){racing.open(name);return;}
+ if(autoRunning(state)&&(name==='market'||name==='storage'))runAuto();
  if(name==='town'){goTown();return;}if(name==='tank'){openTank();return;}if(name==='tournament'){show('지역 낚시대회 일정',tournamentPanel(state),name);return;}const content=panelContent(name,state);if(content){show(content.title,content.html,name);render();return;}
 
  if(name==='time'){const now=gameTime(state);show('낚시 시간표',`<p>현재 ${now.label} · ${now.name}</p><p>게임 하루 = 플레이 10분. 기다리기는 체력을 회복하지 않아요.</p>${PERIODS.map(p=>`<button class="secondary" data-do="wait-hour" data-id="${p.start}">${p.name} ${p.start}:00까지 기다리기</button>`).join('')}<p>현재 노려볼 어종</p>${FISH.filter(f=>f.regions.includes(state.region)&&!f.boss&&activityWeight(f,state)>=.8).map(f=>`<button data-do="fish-detail" data-id="${f.id}">${f.name}</button>`).join('')}<p class="muted">활동 성향을 반영한 게임 확률입니다. 실제 조황은 수온·계절·수심에도 달라집니다.</p>`,'time');}
  else if(name==='market'){for(const id of [...saleSel])if(!state.bag.some(x=>x.uid===id))saleSel.delete(id);const gross=state.bag.reduce((a,f)=>a+f.value,0),rf=repFactor(state),hc=haggleChances(state);
-  show('물고기 시장',`<div class="notice"><b>${state.bag.length}마리 · 기준가 ${fmt(gross)} G</b>${state.debt?` · 미끼 외상 ${fmt(state.debt)} G`:''}<br>평판 <b>${Math.round(state.rep||0)}</b> · ${repLabel(state)} · 판매가 ${rf>=0?'+':''}${(rf*10).toFixed(1)}% · 장비·음식·미끼 ${rf>=0?'−':'+'}${Math.abs(rf*10).toFixed(1)}%<br>행운 <b>${luck(state)}</b> · 흥정 대성공 ${(hc.great*100).toFixed(1)}% · 성공 ${(hc.success*100).toFixed(1)}%</div>${state.bag.length?`<div class="row sel-tools"><button class="secondary" data-do="sel-all">전체 선택</button><button class="secondary" data-do="sel-cheap">싼 물고기 선택</button><button class="secondary" data-do="sel-none">선택 해제</button></div><p class="sel-summary" id="selSummary"></p><div class="row sale-actions"><button class="primary" data-do="sell-sel" data-id="normal">일반 판매<br><small>100%</small></button><button class="secondary" data-do="sell-sel" data-id="discount">평판 판매<br><small>80% · 평판 +0.5/마리</small></button><button class="secondary" data-do="haggle-confirm">흥정<br><small>×3 / ×2 / 실패 반값</small></button></div><div class="sale-list">${state.bag.map(x=>`<button class="list-item sale-item ${saleSel.has(x.uid)?'selected':''}" data-do="sel-toggle" data-id="${x.uid}">${sprite(x.id)}<div class="desc"><strong>${FISH[x.id].name}</strong><small>${['대형','중형','소형'][x.grade]} · ${x.size}cm · ${weightLabel(x)}</small></div><b class="sale-price">${fmt(x.value)} G</b><i class="sale-check" aria-hidden="true"></i></button>`).join('')}</div>`:'<p>아직 보관한 물고기가 없어요. 낚시터에서 한 마리 잡아볼까요?</p>'}<p class="muted">물고기를 골라서 원하는 방법으로 팔아요. 판매가 = 무게(kg) × kg 단가, 판매마다 유지비가 빠져요. 평판 판매로 평판을 쌓으면 모든 판매가가 오르고 장비·음식이 싸져요.</p>`,'market');updateSaleSummary();}
+  show('물고기 시장',`<div class="notice"><b>${state.bag.length}마리 · 기준가 ${fmt(gross)} G</b>${state.debt?` · 미끼 외상 ${fmt(state.debt)} G`:''}<br>평판 <b>${Math.round(state.rep||0)}</b> · ${repLabel(state)} · 판매가 ${rf>=0?'+':''}${(rf*10).toFixed(1)}% · 장비·음식·미끼 ${rf>=0?'−':'+'}${Math.abs(rf*10).toFixed(1)}%<br>행운 <b>${luck(state)}</b> · 흥정 대성공 ${(hc.great*100).toFixed(1)}% · 성공 ${(hc.success*100).toFixed(1)}%</div>${state.bag.length?`<div class="row sel-tools"><button class="secondary" data-do="sel-all">전체 선택</button><button class="secondary" data-do="sel-cheap">싼 물고기 선택</button><button class="secondary" data-do="sel-none">선택 해제</button></div><p class="sel-summary" id="selSummary"></p><div class="row sale-actions"><button class="primary" data-do="sell-sel" data-id="normal">일반 판매<br><small>100%</small></button><button class="secondary" data-do="sell-sel" data-id="discount">평판 판매<br><small>80% · 어종별 1회 평판</small></button><button class="secondary" data-do="haggle-confirm">흥정<br><small>×3 / ×2 / 실패 반값</small></button></div><div class="sale-list">${state.bag.map(x=>`<button class="list-item sale-item ${saleSel.has(x.uid)?'selected':''}" data-do="sel-toggle" data-id="${x.uid}">${sprite(x.id)}<div class="desc"><strong>${FISH[x.id].name}</strong><small>${['대형','중형','소형'][x.grade]} · ${x.size}cm · ${weightLabel(x)}</small></div><b class="sale-price">${fmt(x.value)} G</b><i class="sale-check" aria-hidden="true"></i></button>`).join('')}</div>`:'<p>아직 보관한 물고기가 없어요. 낚시터에서 한 마리 잡아볼까요?</p>'}<p class="muted">물고기를 골라서 원하는 방법으로 팔아요. 판매가 = 무게(kg) × kg 단가, 판매마다 유지비가 빠져요. 평판 판매는 어종마다 처음 판 중형·대형 물고기 한 마리에 기본 평판 +0.5를 줘요. 보스는 제외돼요.</p>`,'market');updateSaleSummary();}
  else if(name==='collection')show('물고기 여행 도감',`<p><b>${Object.keys(state.collection).length} / ${FISH.length}종</b>을 만났어요. 물고기를 누르면 미끼와 시간대를 볼 수 있어요.</p><div class="fish-grid">${FISH.map(f=>`<button class="fish-card ${state.collection[f.id]?'':'unknown'}" data-do="fish-detail" data-id="${f.id}">${sprite(f.id)}<b>${f.name}</b><small>${state.collection[f.id]?`${state.collection[f.id]}마리 · ${state.records[f.id]}cm`:f.boss?'보스 어종':f.ornamental?'관상어':'아직 만나지 못함'}</small></button>`).join('')}</div>`,'collection');
  else if(name==='boosts')openBoosts();
  else if(name==='settings')show('게임 설정',`<div class="setting-row nickname-setting"><div><b>닉네임</b><span>${esc(state.nickname)}</span></div><button data-do="nickname-edit">수정</button></div><div class="setting-row"><b>효과음</b><button data-do="sound">${state.muted?'꺼짐':'켜짐'}</button></div><div class="setting-row"><b>진동</b><button data-do="haptics">${state.haptics?'켜짐':'꺼짐'}</button></div><p class="muted">진동은 지원하는 휴대폰에서만 작동해요.</p><button class="secondary" data-do="boosts">업데이트 보상</button><button class="primary" data-do="update">최신 버전 업데이트</button><button class="secondary" data-do="help">게임 방법 · 홈 화면에 추가</button><div class="row"><button class="secondary" data-do="export">저장 내보내기</button><button class="secondary" data-do="import">저장 가져오기</button></div><p class="muted">자동 저장은 지금 사용하는 기기·브라우저에 저장돼요. 다른 휴대폰으로 옮길 때 저장 파일을 가져오세요. 앱을 닫으면 진행 중인 낚시는 끝나지만, 잡은 물고기와 금화는 유지됩니다.</p><button class="danger-button" data-do="reset-confirm">처음부터 다시 시작</button><p class="version">${TITLE} v${VERSION}<br>여행 시간 ${Math.floor(state.seconds/3600)}시간 ${Math.floor(state.seconds/60)%60}분 · ${state.caught}마리 포획<br>그림: 새로 제작한 AI 일러스트 · 폰트: LINE Seed KR<br><b>© 2026 체니. All rights reserved.</b><br>새 게임 코드·창작 콘텐츠 저작권자: 체니<br><a href="LICENSE.txt" target="_blank" rel="noopener">저작권 및 이용 안내</a></p>`,'settings');
  render();
 }
 document.querySelectorAll('[data-panel]').forEach(b=>b.onclick=()=>openPanel(b.dataset.panel));$('settingsBtn').onclick=()=>openPanel('settings');$('bagBtn').onclick=()=>openPanel('storage');$('baitBtn').onclick=()=>{if(phase==='idle')openPanel('bait');else toast('낚시를 마친 뒤 미끼를 바꿀 수 있어요.');};$('bossBtn').onclick=()=>openPanel('goals');$('mealBtn').onclick=()=>{if(phase==='fight'){toast('물고기와 싸우는 중에는 먹을 수 없어요.');return;}openPanel('food');};$('clockBtn').onclick=()=>{if(phase!=='idle'){toast('낚시를 마치고 집에서 쉬어 주세요.');return;}openPanel('time');};
-function showHaggleResult(xs){const base=xs.reduce((a,f)=>a+f.value,0),rep0=state.rep||0,r=performSale(xs.map(x=>x.uid),'bold',true);if(!r.count){openPanel('market');return;}
+function showHaggleResult(xs){const base=xs.reduce((a,f)=>a+f.value,0),r=performSale(xs.map(x=>x.uid),'bold',true);if(!r.count){openPanel('market');return;}
  const o=r.outcome,info={great:['대성공!','×3','💰','haggle-great','상인이 감탄했어요! 세 배 값을 받았어요.'],success:['성공!','×2','🤝','haggle-success','좋은 값에 넘겼어요.'],fail:['실패…','×½','😓','haggle-fail','상인이 고개를 저었어요. 물고기는 반값에 넘겼어요.']}[o];
- const dRep=Math.round(((state.rep||0)-rep0)*10)/10;
- show('흥정 결과',`<div class="haggle-result"><span class="haggle-badge ${o}">${info[2]} 흥정 ${info[0]} ${info[1]}</span><p>${info[4]}</p><div class="haggle-rows"><span>물고기</span><b>${r.count}마리</b><span>기준가</span><b>${fmt(base)} G</b><span>흥정 배율</span><b>${info[1]}</b>${r.fee?`<span>유지비</span><b>−${fmt(r.fee)} G</b>`:''}<span>평판</span><b>${dRep>=0?'+':''}${dRep} → ${Math.round(state.rep||0)}</b><span class="total">받은 금화</span><b class="total">${fmt(r.net)} G</b></div></div><button class="primary" data-do="market">시장으로 돌아가기</button>`,'haggle-result');
+ const dRep=r.repChange;
+ show('흥정 결과',`<div class="haggle-result"><span class="haggle-badge ${o}">${info[2]} 흥정 ${info[0]} ${info[1]}</span><p>${info[4]}</p><div class="haggle-rows"><span>물고기</span><b>${r.count}마리</b><span>기준가</span><b>${fmt(base)} G</b><span>흥정 배율</span><b>${info[1]}</b>${r.fee?`<span>유지비</span><b>−${fmt(r.fee)} G</b>`:''}<span>평판</span><b>${repDelta(dRep)} → ${repNumber.format(state.rep||0)}</b><span class="total">받은 금화</span><b class="total">${fmt(r.net)} G</b></div></div><button class="primary" data-do="market">시장으로 돌아가기</button>`,'haggle-result');
  celebrate(info[3],{icon:info[2],title:`흥정 ${info[0]}`,sub:`${info[1]} · ${fmt(r.net)} G`});
  sound(o==='fail'?'fail':o==='great'?'critical':'catch');if(o==='great')setTimeout(()=>sound('critical'),260);buzz(o==='great'?[30,40,30,40,60]:o==='success'?[25,30,25]:60);}
-function performSale(ids,method='normal',quiet=false){const r=sell(state,ids,method);for(const id of ids)saleSel.delete(id);save();render();if(!r.count)return r;
- const msg=r.outcome==='great'?`흥정 대성공! 3배 · ${fmt(r.net)} G`:r.outcome==='success'?`흥정 성공! 2배 · ${fmt(r.net)} G`:r.outcome==='fail'?`흥정 실패… 반값에 넘겼어요 · ${fmt(r.net)} G`:method==='discount'?`${r.count}마리 평판 판매 · ${fmt(r.net)} G · 평판 ${Math.round(state.rep)}`:`${r.count}마리 판매! 유지비 제외 ${fmt(r.net)} G`;
+function performSale(ids,method='normal',quiet=false){if(autoRunning(state))runAuto();const r=sell(state,ids,method);for(const id of ids)saleSel.delete(id);save();render();if(!r.count)return r;
+ const msg=r.outcome==='great'?`흥정 대성공! 3배 · ${fmt(r.net)} G`:r.outcome==='success'?`흥정 성공! 2배 · ${fmt(r.net)} G`:r.outcome==='fail'?`흥정 실패… 반값에 넘겼어요 · ${fmt(r.net)} G`:method==='discount'?`${r.count}마리 평판 판매 · ${fmt(r.net)} G · 평판 ${repDelta(r.repChange||0)}`:`${r.count}마리 판매! 유지비 제외 ${fmt(r.net)} G`;
  if(quiet)return r;sound(r.outcome==='fail'?'fail':'catch');toast(msg,3500);return r;}
 let saleSel=new Set();
 body.addEventListener('click',async e=>{const b=e.target.closest('[data-do]');if(!b||b.disabled)return;const cmd=b.dataset.do,id=b.dataset.id;
@@ -394,16 +404,22 @@ function useActive(i){if(modal.open||paused)return;const id=state.equippedSkills
 }
 function selectedFish(){return state.bag.filter(x=>saleSel.has(x.uid));}
 function updateSaleSummary(){const el=document.getElementById('selSummary');if(!el)return;const xs=selectedFish(),v=xs.reduce((a,f)=>a+f.value,0),fee=xs.filter(x=>!x.boss).reduce((a,f)=>a+REGIONS[f.region].expense_on_sale,0),rm=repSaleMult(state);
- el.innerHTML=xs.length?`선택 <b>${xs.length}마리</b> · 일반 ${fmt(Math.max(0,v*rm-fee))} G · 평판 ${fmt(Math.max(0,v*.8*rm-fee))} G`:'판매할 물고기를 눌러 선택하세요.';
+ const rep=discountRepPreview(state,xs);
+ el.innerHTML=xs.length?`선택 <b>${xs.length}마리</b> · 일반 ${fmt(Math.max(0,v*rm-fee))} G · 평판 판매 ${fmt(Math.max(0,v*.8*rm-fee))} G · 평판 ${repDelta(rep)}`:'판매할 물고기를 눌러 선택하세요.';
  for(const b of body.querySelectorAll('[data-do="sell-sel"],[data-do="haggle-confirm"]'))b.disabled=!xs.length;}
+function waterNetTankLabel(remaining,full){
+ const occupancy=`선상 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))}`;
+ if(!full)return occupancy;
+ return `${occupancy} · ${remaining?'자동 판매 중. 칸을 비우면 다시 보관해요.':'어망을 쓰려면 물고기를 옮기거나 판매해 주세요.'}`;
+}
 function waterNetCard(){
  const remaining=waterNetRemaining(state),count=state.waterNet.count,full=state.bag.length>=capacity(state);
  return `<section class="water-net-card" aria-label="물빛 어망">
   <img src="assets/moon-net.webp" alt="">
   <div><div class="water-net-title"><strong>${WATER_NET.name}</strong><span>보유 ${fmt(count)}개</span></div>
-  <p>사용 후 최대 30분 동안 월척·관상어도 잡고, 잡은 물고기는 모두 선상 수족관에 보관해요. 시간이 지나거나 수족관이 가득 차면 자동 판매로 돌아가요.</p>
+  <p>사용하면 실제 시간 30분 동안 월척·관상어도 잡고 선상 수족관에 보관해요. 수족관이 차면 자동 판매하고, 빈 칸이 생기면 남은 시간 동안 다시 보관해요.</p>
   <p>직접 낚시에 성공하면 ${WATER_NET.dropChance*100}% 확률로 얻어요.</p>
-  <p id="waterNetTank">선상 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))} · ${full?'가득 찼어요. 어망을 쓰려면 물고기를 옮기거나 판매해 주세요.':'마지막 빈 칸까지 보관해요'}</p>
+  <p id="waterNetTank">${waterNetTankLabel(remaining,full)}</p>
   <p id="waterNetRemaining" class="water-net-time" ${remaining?'':'hidden'}>${remaining?`남은 시간 ${waterNetClock(remaining)}`:''}</p>
   <button class="secondary" type="button" data-do="water-net-use" ${remaining||!count||full||phase!=='idle'||state.tournament?'disabled':''}>물빛 어망 사용</button></div>
  </section>`;
@@ -415,7 +431,7 @@ function refreshAutoPanel(){
  status.hidden=!remaining;
  status.textContent=remaining?`남은 시간 ${waterNetClock(remaining)}`:'';
  const tank=$('waterNetTank'),full=state.bag.length>=capacity(state);
- tank.textContent=`선상 수족관 ${fmt(state.bag.length)}/${fmt(capacity(state))} · ${full?'가득 찼어요. 어망을 쓰려면 물고기를 옮기거나 판매해 주세요.':'마지막 빈 칸까지 보관해요'}`;
+ tank.textContent=waterNetTankLabel(remaining,full);
  body.querySelector('[data-do="water-net-use"]').disabled=!!remaining||!state.waterNet.count||full||phase!=='idle'||!!state.tournament;
  const start=body.querySelector('[data-do="auto-start"]'),issue=$('autoStartIssue');
  if(start){
@@ -427,24 +443,24 @@ function refreshAutoPanel(){
  const stats=$('autoRunStats');
  if(stats){
   const a=state.auto,bid=a.bait||autoBait(state);
-  $('autoRunMode').textContent=remaining?'물빛 어망으로 보관 중':'자동 판매 중';
-  stats.textContent=`${autoCatchLine(a)} · 경험치 +${fmt(a.xp)}`;
+  $('autoRunMode').textContent=autoModeLabel();
+  stats.textContent=`${autoCatchLine(a)} · 경험치 +${fmt(a.xp)}${a.repGain>0?` · 평판 ${repDelta(a.repGain)}`:''}`;
   $('autoBaitStats').textContent=`미끼 ${baitInfo(bid).name} ${fmt(state.baitStock[bid]||0)}개 남음 · 자동 구매 ${fmt(a.bought||0)}개(−${fmt(a.spent||0)} G)`;
  }
 }
 function openAuto(){
  const on=autoRunning(state),a=state.auto,bid=on?a.bait||autoBait(state):autoBait(state),bait=BAITS.find(x=>x.id===bid),left=state.baitStock[bid]||0,price=baitPrice(state,bid);
  const ar=autoRates(state,0),pct=v=>(v*100).toFixed(v<.1?1:0)+'%';
- const rules=`<details class="auto-rules"><summary>자동 낚시 규칙</summary><ul class="checklist"><li>이 낚시터의 일반 미끼를 먼저 쓰고, 떨어지면 금화로 1개씩 사요.</li><li>브라우저를 닫아도 진행되며 다시 열면 정산돼요. 미끼를 살 금화가 떨어지거나 멈추면 끝나요.</li><li>일반 자동 낚시는 잡은 물고기를 바로 판매해요. 현재 판매율 ${pct(ar.sale)} · 경험치 ${pct(ar.xp)} · 월척 확률 ${pct(ar.trophy)}.</li><li>물빛 어망은 시간이 지나거나 마지막 빈 칸을 채우면 효과가 끝나요. 이후에 잡은 물고기부터 자동 판매해요. 보스는 직접 낚시로 만날 수 있어요.</li><li>장착한 공격 스킬 단계에 따라 전투 시간이 최대 8% 줄어요. 같은 계열에서는 높은 단계만 적용돼요.</li><li>자동 낚시 중에는 직접 낚시와 낚시터 이동이 잠겨요.</li></ul></details>`;
+ const rules=`<details class="auto-rules"><summary>자동 낚시 규칙</summary><ul class="checklist"><li>이 낚시터의 일반 미끼를 먼저 쓰고, 떨어지면 금화로 1개씩 사요.</li><li>브라우저를 닫아도 진행되며 다시 열면 정산돼요. 미끼를 살 금화가 떨어지거나 멈추면 끝나요.</li><li>일반 자동 낚시는 잡은 물고기를 바로 판매해요. 현재 판매율 ${pct(ar.sale)} · 경험치 ${pct(ar.xp)} · 월척 확률 ${pct(ar.trophy)}.</li><li>물빛 어망의 시간은 수족관이 가득 차도 계속 흘러요. 새 시도는 빈 칸이 있으면 보관하고, 가득 차면 일반 자동 낚시로 판매해요. 보스는 직접 낚시로 만날 수 있어요.</li><li>첫 어종과 월척의 평판은 직접 낚시의 절반을 받아요. 어망으로 보관한 물고기는 기존 크기 기록을 5% 이상 넘으면 평판을 받아요.</li><li>장착한 공격 스킬 단계에 따라 전투 시간이 최대 8% 줄어요. 같은 계열에서는 높은 단계만 적용돼요.</li><li>자동 낚시 중에는 직접 낚시와 낚시터 이동이 잠겨요.</li></ul></details>`;
  if(on){
-  show('자동 낚시',`<div class="notice"><b>🤖 ${REGIONS[a.region].display||REGIONS[a.region].name}에서 자동 낚시 중</b><br><span id="autoRunMode">${waterNetRemaining(state)?'물빛 어망으로 보관 중':'자동 판매 중'}</span><br><span id="autoRunStats">${autoCatchLine(a)} · 경험치 +${fmt(a.xp)}</span><br><span id="autoBaitStats">미끼 ${bait?.name||''} ${fmt(left)}개 남음 · 자동 구매 ${fmt(a.bought||0)}개(−${fmt(a.spent||0)} G)</span></div>${waterNetCard()}${view!=='fish'?'<button class="primary" data-do="auto-view">낚시터에서 보기</button>':''}<button class="danger-button" data-do="auto-stop">자동 낚시 멈추기</button>${rules}`,'auto');
+  show('자동 낚시',`<div class="notice"><b>🤖 ${REGIONS[a.region].display||REGIONS[a.region].name}에서 자동 낚시 중</b><br><span id="autoRunMode">${autoModeLabel()}</span><br><span id="autoRunStats">${autoCatchLine(a)} · 경험치 +${fmt(a.xp)}${a.repGain>0?` · 평판 ${repDelta(a.repGain)}`:''}</span><br><span id="autoBaitStats">미끼 ${bait?.name||''} ${fmt(left)}개 남음 · 자동 구매 ${fmt(a.bought||0)}개(−${fmt(a.spent||0)} G)</span></div>${waterNetCard()}<div class="row"><button class="secondary" data-do="storage">수족관 열기</button><button class="secondary" data-do="market">물고기 판매</button></div>${view!=='fish'?'<button class="primary" data-do="auto-view">낚시터에서 보기</button>':''}<button class="danger-button" data-do="auto-stop">자동 낚시 멈추기</button>${rules}`,'auto');
   return;
  }
  const why=canStartAuto(state),isBusy=phase!=='idle'||state.tournament;
  show('자동 낚시',`<div class="notice"><b>${REGIONS[state.region].display||REGIONS[state.region].name}</b> · 일반 미끼 ${bait?.name||''} <b>${fmt(left)}개</b> 보유 · 개당 ${fmt(price)} G<br>한 마리에 약 ${Math.round(autoPace(state))}초 · 미끼가 떨어지면 금화로 자동 구매</div>${waterNetCard()}<p class="muted" id="autoStartIssue" ${why?'':'hidden'}>${why}</p><button class="primary" data-do="auto-start" ${why||isBusy?'disabled':''}>자동 낚시 시작</button>${isBusy?'<p class="muted">진행 중인 낚시를 마친 뒤 시작할 수 있어요.</p>':''}${rules}`,'auto');
 }
 function autoSummary(title,d,extra=''){
- show(title,`<div class="haggle-result"><span class="haggle-badge success">🤖 ${fmt(d.caught)}마리</span><div class="haggle-rows"><span>잡은 물고기</span><b>${fmt(d.caught)}마리</b>${d.kept?`<span>선상 수족관 보관</span><b>${fmt(d.kept)}마리</b>`:''}${d.trophies?`<span>✨ 월척</span><b>${fmt(d.trophies)}마리</b>`:''}<span>놓친 물고기</span><b>${fmt(d.missed)}마리</b><span>쓴 미끼</span><b>${fmt(d.used)}개</b>${d.bought?`<span>자동 구매한 미끼</span><b>${fmt(d.bought)}개 · −${fmt(d.spent)} G</b>`:''}<span>경험치</span><b>+${fmt(d.xp)}</b><span>현재 레벨 · 체력</span><b>Lv.${playerLevel(state)} · ${Math.ceil(state.hp)}/${maxHP(state)}</b><span class="total">자동 판매 수익</span><b class="total">${fmt(d.gold)} G</b></div>${extra}</div>${d.reason==='full'?'<button class="secondary" data-do="storage">선상 수족관 열기</button>':''}<button class="primary" data-do="close">확인</button>`,'auto-summary');
+ show(title,`<div class="haggle-result"><span class="haggle-badge success">🤖 ${fmt(d.caught)}마리</span><div class="haggle-rows"><span>잡은 물고기</span><b>${fmt(d.caught)}마리</b>${d.kept?`<span>선상 수족관 보관</span><b>${fmt(d.kept)}마리</b>`:''}${d.trophies?`<span>✨ 월척</span><b>${fmt(d.trophies)}마리</b>`:''}<span>놓친 물고기</span><b>${fmt(d.missed)}마리</b><span>쓴 미끼</span><b>${fmt(d.used)}개</b>${d.bought?`<span>자동 구매한 미끼</span><b>${fmt(d.bought)}개 · −${fmt(d.spent)} G</b>`:''}<span>경험치</span><b>+${fmt(d.xp)}</b>${d.repGain>0?`<span>평판</span><b>${repDelta(d.repGain)}</b>`:''}<span>현재 레벨 · 체력</span><b>Lv.${playerLevel(state)} · ${Math.ceil(state.hp)}/${maxHP(state)}</b><span class="total">자동 판매 수익</span><b class="total">${fmt(d.gold)} G</b></div>${extra}</div>${d.reason==='full'?'<button class="secondary" data-do="storage">선상 수족관 열기</button>':''}<button class="primary" data-do="close">확인</button>`,'auto-summary');
 }
 function showAutoEnd(){
  const a=state.auto;if(!a)return;a.seen=true;save();
@@ -461,7 +477,7 @@ function runAuto(report=false){
   return;
  }
  const gap=(Date.now()-state.auto.last)/1000,d=autoTick(state);
- if(!d.caught&&!d.missed&&autoRunning(state)){renderAuto();refreshAutoPanel();return;}
+ if(!d.caught&&!d.missed&&!d.used&&autoRunning(state)){renderAuto();refreshAutoPanel();return;}
  save();render();
  if(!autoRunning(state)){
   if(!document.hidden&&(!modal.open||panel==='auto'||report&&!panel.startsWith('nickname-'))&&phase==='idle')showAutoEnd();
@@ -504,16 +520,16 @@ function handleV3(cmd,id,b){
    toast('선상 수족관이 가득 찼어요. 물고기를 옮기거나 판매해 주세요.');
    return true;
   }
-  if(activateWaterNet(state)){save();render();openAuto();toast('물빛 어망을 펼쳤어요. 최대 30분 동안, 수족관이 찰 때까지 어획물을 보관해요.',3500);}
+  if(activateWaterNet(state)){save();render();openAuto();toast('물빛 어망을 펼쳤어요. 30분 동안 빈 칸이 있으면 어획물을 보관해요.',3500);}
   else if(panel==='auto')refreshAutoPanel();
   return true;
  }
  if(cmd==='auto-start'){if(state.tournament){toast('낚시대회를 마친 뒤 자동 낚시를 시작하세요.');return true;}if(phase!=='idle'){toast('진행 중인 낚시를 마친 뒤 시작하세요.');return true;}if(startAuto(state)){view='fish';save();close();render();toast('자동 낚시를 시작했어요. 브라우저를 닫아도 계속돼요.',3500);}else toast(canStartAuto(state)||'시작할 수 없어요.');return true;}
  if(cmd==='auto-stop'){runAuto();if(autoRunning(state)){const a=stopAuto(state,'stop');save();render();autoSummary('자동 낚시 멈춤',a);}return true;}
  if(cmd==='sel-toggle'){if(saleSel.has(id))saleSel.delete(id);else saleSel.add(id);b.classList.toggle('selected',saleSel.has(id));updateSaleSummary();return true;}
- if(cmd==='sel-all'||cmd==='sel-none'||cmd==='sel-cheap'){saleSel=new Set();if(cmd==='sel-all')state.bag.forEach(x=>saleSel.add(x.uid));if(cmd==='sel-cheap'){const sorted=[...state.bag].filter(x=>!x.boss).sort((a,c)=>a.value-c.value);sorted.slice(0,Math.ceil(sorted.length/2)).forEach(x=>saleSel.add(x.uid));}for(const el of body.querySelectorAll('.sale-item'))el.classList.toggle('selected',saleSel.has(el.dataset.id));updateSaleSummary();return true;}
+ if(cmd==='sel-all'||cmd==='sel-none'||cmd==='sel-cheap'){saleSel=new Set();const shown=new Set([...body.querySelectorAll('.sale-item')].map(el=>el.dataset.id));if(cmd==='sel-all')shown.forEach(uid=>saleSel.add(uid));if(cmd==='sel-cheap'){const sorted=state.bag.filter(x=>shown.has(x.uid)&&!x.boss).sort((a,c)=>a.value-c.value);sorted.slice(0,Math.ceil(sorted.length/2)).forEach(x=>saleSel.add(x.uid));}for(const el of body.querySelectorAll('.sale-item'))el.classList.toggle('selected',saleSel.has(el.dataset.id));updateSaleSummary();return true;}
  if(cmd==='sell-sel'){const ids=selectedFish().map(x=>x.uid);if(!ids.length){toast('먼저 판매할 물고기를 선택하세요.');return true;}performSale(ids,id==='discount'?'discount':'normal');openPanel('market');return true;}
- if(cmd==='haggle-confirm'){const xs=selectedFish();if(!xs.length){toast('먼저 판매할 물고기를 선택하세요.');return true;}const hc=haggleChances(state),v=xs.reduce((a,f)=>a+f.value,0);show('흥정할까요?',`<p>선택한 <b>${xs.length}마리</b>(기준가 ${fmt(v)} G)를 한 번에 흥정해요.</p><ul class="checklist"><li>대성공 ${(hc.great*100).toFixed(1)}% · <b>3배</b></li><li>성공 ${(hc.success*100).toFixed(1)}% · <b>2배</b></li><li>실패 ${((1-hc.great-hc.success)*100).toFixed(1)}% · <b>반값</b>에 판매</li></ul><p class="muted">실패해도 물고기를 잃지 않고 반값을 받아요. 행운이 높을수록 성공 확률이 올라가요. 보스 물고기는 정가로 팔아요.</p><button class="primary" data-do="haggle">흥정 시작</button><button class="secondary" data-do="market">돌아가기</button>`,'haggle');return true;}
+ if(cmd==='haggle-confirm'){const xs=selectedFish();if(!xs.length){toast('먼저 판매할 물고기를 선택하세요.');return true;}const hc=haggleChances(state),v=xs.reduce((a,f)=>a+f.value,0);show('흥정할까요?',`<p>선택한 <b>${xs.length}마리</b>(기준가 ${fmt(v)} G)를 한 번에 흥정해요.</p><ul class="checklist"><li>대성공 ${(hc.great*100).toFixed(1)}% · <b>3배</b></li><li>성공 ${(hc.success*100).toFixed(1)}% · <b>2배</b></li><li>실패 ${((1-hc.great-hc.success)*100).toFixed(1)}% · <b>반값</b>에 판매</li></ul><p class="muted">실패하면 반값을 받고 평판이 1 떨어져요. 행운이 높을수록 성공 확률이 올라가요. 보스 물고기는 정가로 팔아요.</p><button class="primary" data-do="haggle">흥정 시작</button><button class="secondary" data-do="market">돌아가기</button>`,'haggle');return true;}
  if(cmd==='haggle'){const xs=selectedFish();if(!xs.length){openPanel('market');return true;}showHaggleResult(xs);return true;}
  if(cmd==='restaurant'||cmd==='food'){openPanel(cmd);return true;}
  if(cmd==='food-buy'){if(buyFood(state,id,1,spend)){toast(`${foodInfo(id).name}을(를) 샀어요.`);sound('catch');save();}else toast('금화·레벨·외상을 확인해 주세요.');openPanel(panel==='food'?'food':'restaurant');return true;}
@@ -530,6 +546,7 @@ async function handleV2(cmd,id,b){
  const ops=['boat-buy','boat-select','boat-sell-confirm','boat-sell','home-upgrade','sleep','store-fish','withdraw-fish','store-all','withdraw-all','skill-learn','skill-equip','v2-travel','v2-boss','bait-buy','bait-buy50','bait-emergency','skill-reset-confirm','skill-reset'];
  if(!ops.includes(cmd))return false;
  if(phase!=='idle'){toast('진행 중인 낚시를 마치거나 마을로 귀항한 뒤 이용해 주세요.');return true;}
+ if(autoRunning(state)&&['store-fish','withdraw-fish','store-all','withdraw-all','boat-buy','boat-select','boat-sell'].includes(cmd))runAuto();
  const failMsg='금화·레벨·미끼 외상과 필요한 조건을 확인해 주세요.';
  if(cmd==='skill-reset-confirm'){show('스킬을 다시 배분할까요?',`<p>사용한 스킬 포인트를 모두 돌려받아요. 배운 스킬은 초기화되며 금화는 들지 않아요.</p><button class="primary" data-do="skill-reset">포인트 돌려받기</button><button class="secondary" data-do="skills">취소</button>`,'skills');}
  if(cmd==='skill-reset'){resetSkills(state);save();openPanel('skills');}

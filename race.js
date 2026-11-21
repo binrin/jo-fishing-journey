@@ -186,7 +186,7 @@ export function startRace(s,tier,spend,rng=Math.random){
   return {name:WORDS[i]+' 팀',at:-3-row*16-(i%6)*1.4,x:gridX,gridX,pace,finish:null,
    color:'hsl('+((21+i*41)%360)+' 75% 67%)'};
  });
- const player={name:normalizeNickname(s.nickname)||'조선생 팀',at:0,x:0,speed:0,side:0,energy:65,impact:0,edge:false,finish:null,color:'#ffdf54'};
+ const player={name:normalizeNickname(s.nickname)||'조선생 팀',at:0,x:0,speed:0,side:0,rudder:0,energy:65,impact:0,edge:false,finish:null,color:'#ffdf54'};
  return {course,stats,tier,teams,player,time:0,countdown:3,done:false,settled:false,hit:new Set(),gates:new Set()};
 }
 
@@ -231,10 +231,20 @@ export function stepRace(r,dt,input={}){
  const wake=r.teams.find(team=>team.at>p.at+5&&team.at<p.at+47&&Math.abs(team.x-p.x)<16);
  const chop=wake?(p.x<wake.x?-1:1)*16/s.stability:0;
  const fastTurn=boost?1/Math.max(.92,s.handling*.79+.32):1;
- p.side+=(steering*110*s.handling*fastTurn*(input.brake?1.18:1)+chop-p.side)*Math.min(1,dt*(5+s.handling));
+ const previousRudder=p.rudder;
+ // Turn in gently on a tap, but build to full steering on a held input.
+ const rate=steering===0?11:steering*previousRudder<0?7.5:4.1;
+ const rampTime=Math.min(dt,Math.abs(steering-previousRudder)/rate);
+ p.rudder=previousRudder+Math.sign(steering-previousRudder)*rate*rampTime;
+ const rudderTravel=(previousRudder+p.rudder)*.5*rampTime+p.rudder*(dt-rampTime);
+ const averageRudder=dt>0?rudderTravel/dt:p.rudder;
+ const sideTarget=averageRudder*170*s.handling*fastTurn*(input.brake?1.18:1)+chop;
+ const sideResponse=8+s.handling;
+ const previousSide=p.side,sideChange=-Math.expm1(-dt*sideResponse);
+ p.side+=(sideTarget-previousSide)*sideChange;
  const preceding=p.at;
  p.at+=p.speed*dt;
- p.x+=p.side*dt;
+ p.x+=sideTarget*dt+(previousSide-sideTarget)*sideChange/sideResponse;
  const center=courseCenter(c,p.at);
  p.edge=Math.abs(p.x-center)>c.width/2-9;
  if(p.edge)p.x=clamp(p.x,center-c.width/2+8,center+c.width/2-8);

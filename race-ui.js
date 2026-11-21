@@ -99,7 +99,7 @@ function confirmHTML(s,tier){
  return `<section class="race-paddock race-check-in">${boatCard(s,raceStats(s))}
  <dl class="race-stat-grid race-check-in-money">${ledger('참가비',fmt(league.fee)+' G')}${ledger('보유 금화',fmt(s.coins)+' G')}${ledger('결제 후 금화',block?'—':fmt(s.coins-league.fee)+' G')}</dl>
  <div class="race-guide"><h3>첫 출전 조작법</h3><ol>
- <li><b>자동 가속과 조향</b> · 배는 자동으로 가속해요. 수면의 왼쪽이나 오른쪽을 터치해 같은 방향으로 움직이세요.</li>
+ <li><b>자동 가속과 조향</b> · 배는 자동으로 가속해요. 수면의 왼쪽·오른쪽을 짧게 누르면 조금 방향을 바꿔요. 길게 누르면 같은 방향으로 더 크게 돌아요.</li>
  <li><b>급커브</b> · 왼쪽 아래 제동 버튼을 눌러 감속하세요.</li>
  <li><b>부스트</b> · 오른쪽 아래 버튼으로 사용해요. 녹색 부표 사이를 통과하면 충전돼요.</li>
  </ol><p>키보드 · ← → 또는 A D 조향 · ↓ 또는 S 제동 · 스페이스 부스트</p></div>
@@ -127,7 +127,7 @@ function liveHTML(r){
    </div>
    <button type="button" data-drive="boost"><i aria-hidden="true">↯</i><span>부스트</span></button>
   </div>
-  <p class="race-steer-hint">수면 왼쪽·오른쪽 터치로 조향</p>
+  <p class="race-steer-hint">수면 좌우 · 짧게 눌러 미세 조향 · 길게 눌러 큰 회전</p>
   <p class="race-keyboard">← → / A D 조향 · ↓ / S 제동 · 스페이스 부스트</p>
  </div>
  <aside class="race-pause" hidden aria-labelledby="racePauseTitle">
@@ -164,6 +164,14 @@ export function createRaceInput(){
   for(const {action} of contacts.values())actions[action]=true;
   return actions;
  };
+ const advanceStep=(seconds,step)=>{
+  step(seconds,held());
+  for(const contact of contacts.values())contact.seconds+=seconds;
+  if(tap){
+   tap.remaining-=seconds;
+   if(tap.remaining<=0)tap=null;
+  }
+ };
  return {
   press(id,action){
    if(contacts.has(id))return;
@@ -174,26 +182,23 @@ export function createRaceInput(){
    const contact=contacts.get(id);
    if(!contact||!isSteer(contact.action)||contact.action===action)return;
    contact.action=action;
-   contact.seconds=0;
+   contact.swiped=true;
    tap=null;
   },
   release(id,allowTap=false){
    const contact=contacts.get(id);
    contacts.delete(id);
-   if(!allowTap||!contact||!isSteer(contact.action)||contact.seconds>=STEER_TAP_SECONDS)return;
+   if(!allowTap||!contact||!isSteer(contact.action)||contact.swiped||contact.seconds>=STEER_TAP_SECONDS)return;
    if([...contacts.values()].some(other=>isSteer(other.action)))return;
    tap={action:contact.action,remaining:STEER_TAP_SECONDS-contact.seconds};
   },
   clear(){contacts.clear();tap=null;},
   held,
-  next(seconds){
-   const actions=held();
-   for(const contact of contacts.values())contact.seconds+=seconds;
-   if(tap){
-    tap.remaining-=seconds;
-    if(tap.remaining<=0)tap=null;
-   }
-   return actions;
+  advance(seconds,step){
+   // Give taps the same active time even if their last moment falls between render frames.
+   const first=tap?Math.min(seconds,tap.remaining):seconds;
+   if(first>0)advanceStep(first,step);
+   if(seconds>first)advanceStep(seconds-first,step);
   }
  };
 }
@@ -297,8 +302,8 @@ export function createRaceUI({getState,body,modal,show,save,render,toast,enhance
    const dt=last?(now-last)/1000:0;
    last=now;
    if(paused||document.hidden){frame=requestAnimationFrame(tick);return;}
-   const held=input.next(r.countdown>0?0:Math.min(dt,.05));
-   stepRace(r,dt,held);
+   if(r.countdown>0)stepRace(r,dt,input.held());
+   else input.advance(Math.min(dt,.05),(seconds,held)=>stepRace(r,seconds,held));
    refresh();
    draw(dt);
    const p=r.player;

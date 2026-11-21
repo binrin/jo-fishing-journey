@@ -1,0 +1,355 @@
+/* Water's edge uses the artwork's full bounds so pins stay with their buildings. */
+#game.town-view {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 54px 37px minmax(0, 1fr) 58px !important;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  background: #f7f3e8;
+}
+
+#game.town-view > .top,
+#game.town-view > .wallet {
+  background: #fffdf6;
+  border-color: #dddcc7;
+}
+
+#game.town-view .brand small {
+  font-size: 10px;
+  letter-spacing: 0;
+  margin-bottom: 2px;
+  color: #45645b;
+}
+
+#game.town-view > .wallet {
+  padding-block: 2px;
+  gap: 6px;
+}
+
+#game.town-view > .wallet button {
+  min-height: 27px;
+  padding-inline: 7px;
+  border-radius: 8px;
+}
+
+#game.town-view > .town-map {
+  display: grid;
+  grid-template: auto minmax(0, 1fr) auto auto / minmax(0, 1fr);
+  gap: 7px;
+  padding: 10px 10px 8px;
+  background: #eaf0e3;
+  color: #173d3a;
+}
+
+.harbor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 2px;
+}
+
+.harbor-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1px 8px;
+  min-width: 0;
+}
+
+.harbor-title h2 {
+  font-size: clamp(22px, 6vw, 32px);
+  line-height: 1;
+}
+
+.harbor-title b,
+.harbor-health {
+  color: #3b6151;
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.harbor-health {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.harbor-xp { display: none; }
+
+#game.town-view .harbor-xp {
+  display: block;
+  height: 3px;
+  margin: 0 0 3px;
+  background: #d5e1d0;
+}
+
+.harbor-xp i { background: #177474; }
+
+.harbor-board {
+  container: harbor-board / size;
+  position: relative;
+  isolation: isolate;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #214f50;
+  overflow: hidden;
+}
+
+.harbor-chart::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(100cqw + 64px);
+  height: calc(100cqh + 64px);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  background: center / cover var(--chart-image);
+  filter: blur(32px) brightness(.72);
+  opacity: .64;
+}
+
+.harbor-chart {
+  --chart-ratio: 1.5;
+  --chart-image: url("assets/town-harbor.webp");
+  width: min(100%, 54vh);
+  width: min(100cqw, calc(100cqh * var(--chart-ratio)));
+  aspect-ratio: var(--chart-ratio);
+  position: relative;
+  background: center / contain no-repeat var(--chart-image);
+}
+
+.harbor-pin {
+  position: absolute;
+  left: var(--pin-x);
+  top: var(--pin-y);
+  transform: translate(-50%, -65%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  color: #173d3a;
+  z-index: 1;
+}
+
+.harbor-pin span {
+  display: grid;
+  place-items: center;
+  width: clamp(23px, 8cqw, 35px);
+  height: clamp(23px, 8cqw, 35px);
+  border: 1px solid #fdf5d4;
+  border-radius: 50% 50% 50% 20%;
+  background: #fff8df;
+  box-shadow: 0 2px 6px #173932ac, 0 0 0 1px #496844;
+  font-size: clamp(12px, 4cqw, 18px);
+  line-height: 1;
+}
+
+.harbor-pin:hover, .harbor-pin:focus-visible { z-index: 2; }
+.harbor-pin:hover span, .harbor-pin:focus-visible span { background: #ffe2a4; }
+
+.harbor-pin[data-town="shop"] { --pin-x: 18%; --pin-y: 26%; }
+.harbor-pin[data-town="market"] { --pin-x: 86%; --pin-y: 25%; }
+.harbor-pin[data-town="skills"] { --pin-x: 53%; --pin-y: 25%; }
+.harbor-pin[data-town="tank"] { --pin-x: 26%; --pin-y: 43%; }
+.harbor-pin[data-town="restaurant"] { --pin-x: 74%; --pin-y: 44%; }
+.harbor-pin[data-town="home"] { --pin-x: 13%; --pin-y: 64%; }
+.harbor-pin[data-town="boats"] { --pin-x: 83%; --pin-y: 65%; }
+.harbor-pin[data-town="race"] { --pin-x: 39%; --pin-y: 68%; }
+
+.harbor-pin[data-town="map"] { --pin-x: 54%; --pin-y: 86%; }
+.harbor-pin[data-town="map"] span { background: #ffe3a2; }
+.harbor-pin svg { width: 60%; height: 60%; }
+
+.harbor-facilities {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.harbor-facility {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 62px;
+  padding: 5px 2px 4px;
+  border: 1px solid #cbd8c8;
+  border-radius: 10px;
+  background: #fffdf4;
+  line-height: 1.12;
+}
+
+.harbor-facility:hover { background: #f5f8e8; }
+.harbor-facility-icon { display: flex; }
+.harbor-facility-text { display: grid; gap: 2px; min-width: 0; max-width: 100%; }
+.harbor-facility b { font-size: clamp(10px, 2.9vw, 13px); }
+.harbor-facility small { color: #486353; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.harbor-actions { display: grid; gap: 4px; min-width: 0; }
+
+.harbor-actions .auto-pill {
+  position: static;
+  transform: none;
+  max-width: none;
+  width: 100%;
+  flex-direction: row;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #538884;
+  border-radius: 9px;
+  box-shadow: none;
+}
+.harbor-actions .auto-pill i { position: static; width: 6px; height: 6px; flex: 0 0 6px; }
+.harbor-actions .auto-pill b { font-size: 11px; padding: 0; }
+.harbor-actions .auto-pill span { font-size: 10px; }
+
+.harbor-departure {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 53px;
+  padding: 5px 12px;
+  border: 1px solid #165856;
+  border-radius: 13px;
+  background: linear-gradient(176deg, #177e76, #105957);
+  color: #fff9dd;
+  text-align: left;
+  box-shadow: inset 0 1px #ffffff40, 0 2px #14444240;
+}
+
+.harbor-departure-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #dfe95e24;
+  color: #ffe3a2;
+  font-size: 22px;
+  line-height: 1;
+}
+.harbor-departure b, .harbor-departure small { display: block; }
+.harbor-departure b { font-size: 16px; line-height: 1.15; }
+.harbor-departure small { color: #e0f0dc; font-size: 11px; margin-top: 2px; line-height: 1.1; }
+.harbor-chevron { font-size: 29px; line-height: 1; }
+
+#game.town-view > .bottom-nav {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 4px 7px;
+  gap: 4px;
+  background: #fffdf4;
+  border-color: #d9decb;
+}
+
+#game.town-view > .bottom-nav button {
+  min-width: 0;
+  min-height: 0;
+  padding: 2px 1px;
+  gap: 1px;
+  border-color: #e2e3d3;
+  white-space: nowrap;
+}
+
+#game.town-view > .bottom-nav button[data-panel="town"] {
+  background: #e3efe1;
+  border-color: #b4cbb3;
+}
+
+#game.town-view > .bottom-nav button b { font-size: clamp(9px, 2.6vw, 12px); }
+.harbor-nav-icon { display: none; }
+
+#game.town-view .harbor-nav-icon { display: block; }
+
+#game.town-view > .wallet .mini-icon,
+#game.town-view > .bottom-nav .nav-icon {
+  background: none;
+  display: grid;
+  place-items: center;
+}
+
+#game.town-view > .wallet .mini-icon { width: 17px; height: 17px; }
+#game.town-view > .bottom-nav .nav-icon { width: 25px; height: 25px; }
+
+@media (max-width: 350px) {
+  #game.town-view > .wallet, #game.town-view > .top { padding-inline: 8px; }
+  #game.town-view > .wallet button > span:last-child { font-size: 9px; }
+  #game.town-view > .town-map { padding-inline: 6px; gap: 5px; }
+  .harbor-facilities { gap: 3px; }
+  .harbor-facility small { font-size: 8px; }
+}
+
+@media (max-height: 690px) {
+  #game.town-view { grid-template-rows: 45px 33px minmax(0, 1fr) 49px !important; }
+  #game.town-view > .town-map { padding-block: 6px; }
+  .harbor-facility { min-height: 46px; padding-block: 2px; }
+  .harbor-facility-icon svg { width: 15px; height: 15px; }
+  .harbor-departure { min-height: 45px; }
+}
+
+@media (min-width: 900px), (orientation: landscape) and (min-width: 520px) {
+  #game.town-view { max-width: 980px; }
+  #game.town-view > .town-map {
+    grid-template: auto minmax(0, 1fr) auto / minmax(0, 1fr) minmax(220px, 30%);
+    column-gap: 10px;
+  }
+  .harbor-heading { grid-area: 1 / 1 / 2 / -1; }
+  .harbor-board { grid-area: 2 / 1 / 4 / 2; }
+  .harbor-facilities {
+    grid-area: 2 / 2 / 3 / 3;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+  .harbor-actions { grid-area: 3 / 2 / 4 / 3; }
+  .harbor-facility { min-height: 0; }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 520px) {
+  #game.town-view { grid-template-rows: 39px 30px minmax(0, 1fr) 44px !important; }
+  #game.town-view > .town-map {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 50%);
+    gap: 5px;
+  }
+  .harbor-title h2 { font-size: 22px; }
+  .harbor-facilities {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+  .harbor-facility b { font-size: 11px; }
+  .harbor-facility small { font-size: 9px; }
+  #game.town-view > .bottom-nav button { flex-direction: row; gap: 4px; }
+  #game.town-view > .bottom-nav .nav-icon { width: 20px; height: 20px; }
+}
+
+@media (orientation: landscape) and (max-height: 365px) and (min-width: 520px) {
+  .harbor-facility-icon { display: none; }
+  .harbor-actions .auto-pill { padding: 3px; }
+}
+
+
+/* Around 1.1:1, the portrait chart fills as much of the board as the landscape chart. */
+@media (orientation: portrait) and (max-width: 899px) {
+  @container harbor-board (max-aspect-ratio: 11 / 10) {
+    .harbor-chart {
+      --chart-ratio: calc(1122 / 1402);
+      --chart-image: url("assets/town-harbor-portrait.webp");
+    }
+    .harbor-pin[data-town="shop"] { --pin-x: 16%; --pin-y: 23%; }
+    .harbor-pin[data-town="market"] { --pin-x: 87%; --pin-y: 24%; }
+    .harbor-pin[data-town="skills"] { --pin-x: 51%; --pin-y: 22%; }
+    .harbor-pin[data-town="tank"] { --pin-x: 24%; --pin-y: 39%; }
+    .harbor-pin[data-town="restaurant"] { --pin-x: 77%; --pin-y: 40%; }
+    .harbor-pin[data-town="home"] { --pin-x: 13%; --pin-y: 57%; }
+    .harbor-pin[data-town="boats"] { --pin-x: 81%; --pin-y: 60%; }
+    .harbor-pin[data-town="race"] { --pin-x: 38%; --pin-y: 61%; }
+    .harbor-pin[data-town="map"] { --pin-x: 51%; --pin-y: 86%; }
+  }
+}

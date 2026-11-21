@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <symbol id="shop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 4-6 8-9q3-3 6-3l-1 13a3 3 0 0 1-6 0v-2l2 2"/><circle cx="8.5" cy="15.5" r="1.8"/></g></symbol>
+  <symbol id="market" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round"><path d="M3 12Q11 1 18 11l4-4v10l-4-4Q11 23 3 12Z"/><path d="M10 7q3 5 0 10"/><circle cx="7.5" cy="11.5" r=".6" fill="currentColor"/></g></symbol>
+  <symbol id="skills" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6q-4-3-9-2v14q5-1 9 2 4-3 9-2V4q-5-1-9 2v14"/><path d="m6 8 3 .6m6 0 3-.6"/></g></symbol>
+  <symbol id="tank" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18v15H3zm0 5q3-2 6 0t6 0 6 0M6 21h12"/><path d="M7 14q4-5 7 0-3 4-7 0Zm7 0 3-2v4Z"/></g></symbol>
+  <symbol id="restaurant" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 12h20q-1 7-8 8h-4q-7-1-8-8Zm6 9h8M7 9q2-2 .2-4m5 4q2-3 0-6m5 6q2-2 .2-4"/></g></symbol>
+  <symbol id="home" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11q5-2 10-8 5 6 10 8l-3 1H5ZM5 12v8h14v-8m-9 8v-6h4v6"/></g></symbol>
+  <symbol id="boats" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13h20l-4 5H6Zm4 0 2-6h8l2 6M10 7V4h3v3M2 21q3-2 5-1t5 0 5 0 5 0"/></g></symbol>
+  <symbol id="race" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"><path fill="none" d="M4 21V4q4-2 8 0t8 0v10q-4 2-8 0t-8 0"/><path fill="currentColor" stroke="none" d="M5 4q2-.8 4-.4v4.7q-2-.4-4 .4Zm4 4.3q2 0 4 1.2v4.7q-2-1.2-4-1.2Zm4-3.5q2 .8 5 .5V10q-3 .3-5-.5Z"/></g></symbol>
+  <symbol id="map" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.3"/><path d="M12 7.5V21M8 10h8M3 14q1 6 9 7 8-1 9-7m-18 3v-3h3m15 3v-3h-3"/></g></symbol>
+ </defs>
+</svg>
